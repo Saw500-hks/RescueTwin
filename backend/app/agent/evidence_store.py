@@ -371,7 +371,13 @@ class EvidenceStore:
         return list(self._scenarios.values())
 
     def get_evidence_for_scenario(self, scenario_id: str) -> List[EvidenceItem]:
-        return list(self._evidence.get(scenario_id, {}).values())
+        seen = set()
+        unique_items = []
+        for it in self._evidence.get(scenario_id, {}).values():
+            if it.building_id not in seen:
+                seen.add(it.building_id)
+                unique_items.append(it)
+        return unique_items
 
     def get_evidence_item(self, scenario_id: str, building_id: str) -> Optional[EvidenceItem]:
         scenario_ev = self._evidence.get(scenario_id, {})

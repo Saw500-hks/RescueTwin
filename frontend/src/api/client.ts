@@ -98,6 +98,11 @@ export const queryInspectionPriorities = async (query: string = "Which buildings
   return res.data;
 };
 
+export const planMissionWithNemotron = async (userRequest: string = "Formulate optimal triage and rescue plan for Sector 7", scenarioId: string = "scenario_earthquake_74") => {
+  const res = await api.post('/agent/plan-mission', { user_request: userRequest, scenario_id: scenarioId });
+  return res.data;
+};
+
 // ==========================================
 // 5-STEP COMPUTER VISION & GEOSPATIAL PIPELINE
 // ==========================================

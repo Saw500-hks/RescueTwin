@@ -1,7 +1,7 @@
 """Autonomous Tool Registry for RescueTwin NVIDIA Nemotron Agent.
 These tools provide real-time querying, simulation, and operational dispatch execution.
 """
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 import math
 from app.agent.evidence_store import evidence_store
 from app.agent.schemas import UnitType, DispatchUnit
@@ -362,6 +362,58 @@ NEMOTRON_TOOL_DEFINITIONS = [
                 }
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_priority",
+            "description": "Calculates sorted life-safety triage ranking integrating damage severity, access bottlenecks, and trapped occupancy.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "scenario_id": {"type": "string", "description": "Scenario ID"}
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_access",
+            "description": "Evaluates arterial road blockage percentages, access ratios, and transit bottlenecks.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "scenario_id": {"type": "string", "description": "Scenario ID"}
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_damage",
+            "description": "Retrieves multi-temporal satellite homography damage classifications and change indices.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "scenario_id": {"type": "string", "description": "Scenario ID"}
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_building",
+            "description": "Fetches building structural footprint area, storeys, estimated trapped occupants, and active hazards.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "scenario_id": {"type": "string", "description": "Scenario ID"}
+                }
+            }
+        }
     }
 ]
 
@@ -377,6 +429,7 @@ def get_damage_assessments(scenario_id: str = "scenario_earthquake_74", building
         assessments.append({
             "building_id": it.building_id,
             "name": it.name,
+            "damage": it.damage_level,
             "damage_level": it.damage_level,
             "damage_score": it.damage_score or it.confidence,
             "confidence": it.confidence,
@@ -411,18 +464,40 @@ def get_road_access(scenario_id: str = "scenario_earthquake_74", building_ids: O
             "primary_corridor_status": "BLOCKED (Bridge 4)" if it.road_blockage_pct > 60 else ("RESTRICTED" if it.road_blockage_pct > 30 else "CLEAR"),
             "recommended_ingress": "North Arterial Blvd" if it.road_blockage_pct > 40 else "Direct Municipal Route"
         })
+    building_accessibility = {}
+    for r in road_access_data:
+        bid = r["building_id"]
+        building_accessibility[bid] = r
+        building_accessibility[bid.replace("-", "").replace("_", "").upper()] = r
+
     return {
         "status": "success",
         "tool": "get_road_access",
         "total_corridors_analyzed": len(road_access_data),
-        "corridors": road_access_data
+        "corridors": road_access_data,
+        "building_accessibility": building_accessibility
     }
 
-def get_building_metadata(scenario_id: str = "scenario_earthquake_74", building_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+def get_building_metadata(
+    building_id_or_scenario: Optional[Union[str, List[str]]] = None,
+    scenario_id: str = "scenario_earthquake_74",
+    building_ids: Optional[List[str]] = None
+) -> Dict[str, Any]:
     """Tool 3: Fetches building structural footprint area, storeys, estimated trapped occupants, and active hazards."""
-    items = evidence_store.get_evidence_for_scenario(scenario_id)
-    if building_ids:
-        norm_filter = [b.replace("-", "").replace("_", "").upper() for b in building_ids]
+    target_scenario = scenario_id
+    filter_ids: List[str] = list(building_ids) if building_ids else []
+
+    if isinstance(building_id_or_scenario, list):
+        filter_ids.extend(building_id_or_scenario)
+    elif isinstance(building_id_or_scenario, str):
+        if building_id_or_scenario.startswith("scenario_"):
+            target_scenario = building_id_or_scenario
+        else:
+            filter_ids.append(building_id_or_scenario)
+
+    items = evidence_store.get_evidence_for_scenario(target_scenario)
+    if filter_ids:
+        norm_filter = [b.replace("-", "").replace("_", "").upper() for b in filter_ids]
         items = [it for it in items if it.building_id.replace("-", "").replace("_", "").upper() in norm_filter]
 
     metadata = []
@@ -430,6 +505,8 @@ def get_building_metadata(scenario_id: str = "scenario_earthquake_74", building_
         metadata.append({
             "building_id": it.building_id,
             "name": it.name,
+            "damage_level": it.damage_level,
+            "priority": it.priority,
             "building_area_sqm": it.building_area or it.area_sqm,
             "estimated_trapped_occupants": it.estimated_victims,
             "occupancy_confidence": it.victim_confidence,
@@ -437,12 +514,21 @@ def get_building_metadata(scenario_id: str = "scenario_earthquake_74", building_
             "coordinates": {"lat": it.lat, "lng": it.lng, "elevation_m": it.elevation_m},
             "status": it.status
         })
-    return {
+
+    res: Dict[str, Any] = {
         "status": "success",
         "tool": "get_building_metadata",
         "total_records": len(metadata),
         "metadata": metadata
     }
+    if metadata and (filter_ids or len(metadata) == 1):
+        first = metadata[0]
+        res["building_id"] = first["building_id"]
+        res["name"] = first["name"]
+        res["damage_level"] = first["damage_level"]
+        res["priority"] = first["priority"]
+        res["building"] = first
+    return res
 
 def calculate_priority(scenario_id: str = "scenario_earthquake_74", weights: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
     """Tool 4: Computes life-safety triage ranking integrating damage assessments, road access, and building metadata."""
@@ -482,8 +568,15 @@ def calculate_priority(scenario_id: str = "scenario_earthquake_74", weights: Opt
         "status": "success",
         "tool": "calculate_priority",
         "total_evaluated": len(priorities),
-        "prioritized_inspection_list": priorities
+        "prioritized_inspection_list": priorities,
+        "ranked_queue": priorities
     }
+
+# Tool Aliases matching user workflow specification
+get_priority = calculate_priority
+get_access = get_road_access
+get_damage = get_damage_assessments
+get_building = get_building_metadata
 
 TOOL_EXECUTORS = {
     "inspect_structure": inspect_structure,
@@ -496,4 +589,8 @@ TOOL_EXECUTORS = {
     "get_road_access": get_road_access,
     "get_building_metadata": get_building_metadata,
     "calculate_priority": calculate_priority,
+    "get_priority": get_priority,
+    "get_access": get_access,
+    "get_damage": get_damage,
+    "get_building": get_building,
 }

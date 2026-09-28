@@ -98,3 +98,100 @@ def test_building_b027_evidence_and_inspection():
     assert disp["dispatch"]["unit_type"] == "INSPECTION_TEAM"
     assert disp["dispatch"]["target_building_id"] in ["B027", "B-027"]
 
+def test_four_evaluation_tools():
+    from app.agent.tools import get_priority, get_access, get_damage, get_building
+    
+    # 1. get_damage
+    damages = get_damage("scenario_earthquake_74")
+    assert damages["status"] == "success"
+    assert damages["total_assessed"] >= 4
+    b027_dmg = next(b for b in damages["assessments"] if b["building_id"] in ["B027", "B-027"])
+    assert b027_dmg["damage"] == "MAJOR"
+    assert b027_dmg["confidence"] == 0.91
+
+    # 2. get_access
+    access = get_access("scenario_earthquake_74")
+    assert access["status"] == "success"
+    assert "corridors" in access
+    assert "building_accessibility" in access
+    assert "B027" in access["building_accessibility"]
+
+    # 3. get_building
+    bld_meta = get_building("B027", "scenario_earthquake_74")
+    assert bld_meta["status"] == "success"
+    assert bld_meta["building_id"] in ["B027", "B-027"]
+    assert bld_meta["damage_level"] == "MAJOR"
+    assert bld_meta["priority"] == "HIGH"
+
+    # 4. get_priority
+    prio = get_priority("scenario_earthquake_74")
+    assert prio["status"] == "success"
+    # B027 should be evaluated in prioritized queue
+    b027_prio = next(p for p in prio["ranked_queue"] if p["building_id"] in ["B027", "B-027"])
+    assert b027_prio["priority_score"] > 0
+    assert b027_prio["damage_level"] == "MAJOR"
+
+def test_query_inspection_priorities_endpoint():
+    from fastapi.testclient import TestClient
+    from app.main import app
+    client = TestClient(app)
+    
+    res = client.post("/api/v1/agent/query-inspection-priorities", json={
+        "query": "Which buildings should we inspect first?",
+        "scenario_id": "scenario_earthquake_74"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] in ["success", "COMPLETED"]
+    assert "tools_executed" in data
+    assert len(data["tools_executed"]) == 4
+    tool_names = [t["tool"] for t in data["tools_executed"]]
+    assert tool_names == [
+        "get_damage_assessments()",
+        "get_road_access()",
+        "get_building_metadata()",
+        "calculate_priority()"
+    ]
+    assert "nemotron_response" in data
+    assert len(data["nemotron_response"]["ranked_buildings"]) >= 4
+    assert data["nemotron_response"]["ranked_buildings"][0]["building_id"] in ["B027", "B-027"]
+
+def test_plan_mission_two_pass_flow_endpoint():
+    from fastapi.testclient import TestClient
+    from app.main import app
+    client = TestClient(app)
+
+    res = client.post("/api/v1/agent/plan-mission", json={
+        "user_request": "Develop mission plan for earthquake epicenter Alpha",
+        "scenario_id": "scenario_earthquake_74"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] in ["success", "COMPLETED"]
+    assert "user_request" in data
+    assert "nemotron_pass_1_tool_selection" in data
+    assert "executed_tools" in data
+    assert "nemotron_pass_2_synthesis" in data
+    assert "mission_plan" in data
+
+    # Verify Pass 1 selected tools
+    tools_selected = data["nemotron_pass_1_tool_selection"]["selected_tools"]
+    assert any(t in tools_selected for t in ["get_priority", "calculate_priority"])
+    assert any(t in tools_selected for t in ["get_access", "get_road_access"])
+    assert any(t in tools_selected for t in ["get_damage", "get_damage_assessments"])
+    assert any(t in tools_selected for t in ["get_building", "get_building_metadata"])
+
+    # Verify executed tools dictionary
+    assert "get_priority" in data["executed_tools"]
+    assert "get_access" in data["executed_tools"]
+    assert "get_damage" in data["executed_tools"]
+    assert "get_building" in data["executed_tools"]
+
+    # Verify Pass 2 mission plan
+    plan = data["mission_plan"]
+    assert "mission_id" in plan
+    assert "phases" in plan
+    assert len(plan["phases"]) >= 3
+    assert "dispatches" in plan
+    assert len(plan["dispatches"]) >= 1
+

@@ -8,10 +8,11 @@ import {
   Terminal, Compass, AlertTriangle, ArrowRight, Layers, Box as BoxIcon,
   Play, RefreshCw, Send, Radio, UserCheck, MapPin, Truck, Flame,
   Droplets, Sparkles, Network, ExternalLink, RotateCcw, Eye, EyeOff,
-  Crosshair, Navigation, Maximize, Loader2, Database, Sliders, ChevronDown
+  Crosshair, Navigation, Maximize, Loader2, Database, Sliders, ChevronDown,
+  Clock, ShieldCheck
 } from 'lucide-react';
 import clsx from 'clsx';
-import { executeAgentTool, queryInspectionPriorities } from '../api/client';
+import { executeAgentTool, queryInspectionPriorities, planMissionWithNemotron } from '../api/client';
 import { AiAssessmentModal } from './AiAssessmentModal';
 
 export interface CommandBuilding {
@@ -169,7 +170,6 @@ const InteractiveBuildingMesh: React.FC<InteractiveBuildingMeshProps> = ({ build
     }
   }, [building.badgeColor]);
 
-  // Subtle breathing pulse for selected building
   useFrame((state) => {
     if (!meshRef.current) return;
     if (isSelected) {
@@ -227,7 +227,6 @@ const InteractiveBuildingMesh: React.FC<InteractiveBuildingMeshProps> = ({ build
       {isSelected && (
         <group position={[0, building.scale[1] / 2 + 1.2, 0]}>
           <pointLight color="#00E5FF" intensity={2} distance={8} />
-          {/* Target indicator ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]}>
             <ringGeometry args={[0.7, 0.9, 32]} />
             <meshBasicMaterial color="#00E5FF" side={THREE.DoubleSide} transparent opacity={0.9} />
@@ -275,11 +274,22 @@ export const RescueTwinCommandCenter: React.FC = () => {
   const [showEvidenceModal, setShowEvidenceModal] = useState<boolean>(false);
   const [dispatching, setDispatching] = useState<boolean>(false);
   const [dispatchSuccess, setDispatchSuccess] = useState<string | null>(null);
-  
-  // Workflow Tab: "which_first" (Tool 1-4 -> Nemotron -> Structured response) vs "why_b027" (Evidence -> Damage -> Access -> Recommendation)
-  const [activeWorkflowTab, setActiveWorkflowTab] = useState<'which_first' | 'why_b027'>('which_first');
+
+  // Workflow modes:
+  // 1. "mission_plan": User request -> Nemotron -> Tool selection -> [get_priority, get_access, get_damage, get_building] -> Nemotron -> Mission plan
+  // 2. "which_first": "Which buildings should we inspect first?" -> Rescue Agent -> Tools 1-4 -> Nemotron -> Structured response
+  // 3. "why_b027": "Why is B027 high priority?" -> Evidence -> Damage -> Access -> Recommendation
+  const [activeWorkflowTab, setActiveWorkflowTab] = useState<'mission_plan' | 'which_first' | 'why_b027'>('mission_plan');
+
+  // Mission Plan Execution State
+  const [userRequestText, setUserRequestText] = useState<string>('Formulate 72h Golden Window extraction plan for Sector 7');
+  const [planningMission, setPlanningMission] = useState<boolean>(false);
+  const [activePlanStep, setActivePlanStep] = useState<number>(6);
+  const [missionPlan, setMissionPlan] = useState<any>(null);
+
+  // Inspection Priorities Execution State
   const [executingFlow, setExecutingFlow] = useState<boolean>(false);
-  const [activeToolStep, setActiveToolStep] = useState<number>(4);
+  const [activeToolStep, setActiveToolStep] = useState<number>(6);
   const [queryResponse, setQueryResponse] = useState<any>(null);
 
   const selected = useMemo(() => {
@@ -309,16 +319,47 @@ export const RescueTwinCommandCenter: React.FC = () => {
     }
   };
 
-  const handleExecuteInspectionWorkflow = async () => {
-    setExecutingFlow(true);
-    setActiveToolStep(1); // Tool 1: get_damage_assessments()
+  // Execute User request -> Nemotron -> Tool selection -> [get_priority, get_access, get_damage, get_building] -> Nemotron -> Mission plan
+  const handleGenerateMissionPlan = async (customReq?: string) => {
+    const req = customReq || userRequestText;
+    setPlanningMission(true);
+    setActivePlanStep(1); // User request
 
     try {
-      const t1 = setTimeout(() => setActiveToolStep(2), 400); // Tool 2: get_road_access()
-      const t2 = setTimeout(() => setActiveToolStep(3), 800); // Tool 3: get_building_metadata()
-      const t3 = setTimeout(() => setActiveToolStep(4), 1200); // Tool 4: calculate_priority()
-      const t4 = setTimeout(() => setActiveToolStep(5), 1600); // Nemotron
-      const t5 = setTimeout(() => setActiveToolStep(6), 2000); // Structured response
+      const s1 = setTimeout(() => setActivePlanStep(2), 350); // Nemotron
+      const s2 = setTimeout(() => setActivePlanStep(3), 700); // Tool selection
+      const s3 = setTimeout(() => setActivePlanStep(4), 1100); // [get_priority, get_access, get_damage, get_building]
+      const s4 = setTimeout(() => setActivePlanStep(5), 1500); // Nemotron
+      const s5 = setTimeout(() => setActivePlanStep(6), 1900); // Mission plan
+
+      const res = await planMissionWithNemotron(req);
+      setMissionPlan(res.mission_plan);
+
+      clearTimeout(s1);
+      clearTimeout(s2);
+      clearTimeout(s3);
+      clearTimeout(s4);
+      clearTimeout(s5);
+      setActivePlanStep(6);
+    } catch (err) {
+      console.error(err);
+      setActivePlanStep(6);
+    } finally {
+      setPlanningMission(false);
+    }
+  };
+
+  // Execute Tool 1-4 Inspection priorities
+  const handleExecuteInspectionWorkflow = async () => {
+    setExecutingFlow(true);
+    setActiveToolStep(1);
+
+    try {
+      const t1 = setTimeout(() => setActiveToolStep(2), 350);
+      const t2 = setTimeout(() => setActiveToolStep(3), 700);
+      const t3 = setTimeout(() => setActiveToolStep(4), 1050);
+      const t4 = setTimeout(() => setActiveToolStep(5), 1400);
+      const t5 = setTimeout(() => setActiveToolStep(6), 1750);
 
       const data = await queryInspectionPriorities("Which buildings should we inspect first?");
       setQueryResponse(data);
@@ -337,8 +378,9 @@ export const RescueTwinCommandCenter: React.FC = () => {
     }
   };
 
-  // Run on first mount
+  // Initial load
   useEffect(() => {
+    handleGenerateMissionPlan();
     handleExecuteInspectionWorkflow();
   }, []);
 
@@ -424,7 +466,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      {/* Priority Rank Dot */}
                       <span className="text-base">
                         {b.badgeColor === 'red' && '🔴'}
                         {b.badgeColor === 'orange' && '🟠'}
@@ -462,7 +503,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Micro metrics bar */}
                   <div className="mt-2.5 pt-2 border-t border-white/[0.05] grid grid-cols-2 gap-2 text-[10px] font-mono">
                     <div className="text-slate-400">
                       Δ Change: <strong className="text-white">{b.changePct}%</strong>
@@ -478,7 +518,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
             })}
           </div>
 
-          {/* Quick Queue Summary Footer */}
           <div className="p-3 bg-black/50 border-t border-white/[0.06] text-[10px] font-mono text-slate-400 flex items-center justify-between">
             <span>SECTOR RESCUE INDEX: <strong className="text-white">CRITICAL (74.2)</strong></span>
             <button
@@ -493,7 +532,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
 
         {/* RIGHT COLUMN: 3D DIGITAL TWIN (lg:col-span-8) */}
         <div className="lg:col-span-8 relative h-[380px] lg:h-[440px] bg-[#02050E] overflow-hidden">
-          {/* Top Quick Bar in 3D View */}
           <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
             <span className="text-[10px] font-mono font-black text-white bg-[#070D1B]/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-white/[0.1] flex items-center gap-1.5 shadow-lg">
               <BoxIcon className="w-3.5 h-3.5 text-[#00E5FF]" />
@@ -505,7 +543,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
             </span>
           </div>
 
-          {/* Top Right 3D Controls */}
           <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5 bg-[#070D1B]/90 backdrop-blur-md p-1 rounded-xl border border-white/[0.1]">
             <button
               onClick={() => setShowGrid(g => !g)}
@@ -540,7 +577,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
             </button>
           </div>
 
-          {/* 3D WebGL Canvas */}
           <Canvas
             camera={{ position: [14, 16, 18], fov: 42 }}
             style={{ background: '#02050E' }}
@@ -550,13 +586,11 @@ export const RescueTwinCommandCenter: React.FC = () => {
             <directionalLight position={[-15, 20, -10]} intensity={0.6} color="#00E5FF" />
             <pointLight position={[0, 8, 0]} intensity={2.0} color="#FF6B00" distance={30} />
 
-            {/* Dark Terrain Floor */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
               <planeGeometry args={[50, 50]} />
               <meshStandardMaterial color="#040915" roughness={0.85} metalness={0.2} />
             </mesh>
 
-            {/* Grid Overlay */}
             {showGrid && (
               <Grid
                 args={[50, 50]}
@@ -573,10 +607,8 @@ export const RescueTwinCommandCenter: React.FC = () => {
               />
             )}
 
-            {/* Road Corridors */}
             {showRoads && <RoadCorridors />}
 
-            {/* Priority Interactive Buildings */}
             {COMMAND_BUILDINGS.map((b) => (
               <InteractiveBuildingMesh
                 key={b.id}
@@ -586,7 +618,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
               />
             ))}
 
-            {/* Surrounding Context Buildings */}
             {CONTEXT_BUILDINGS.map((c) => (
               <mesh key={c.id} position={c.pos} scale={c.scale}>
                 <boxGeometry />
@@ -611,13 +642,11 @@ export const RescueTwinCommandCenter: React.FC = () => {
             />
           </Canvas>
 
-          {/* Spatial Telemetry HUD (Bottom Right of Canvas) */}
           <div className="absolute bottom-3 right-3 z-10 pointer-events-none bg-[#050915]/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/[0.08] text-[9.5px] font-mono text-slate-400 text-right">
             <div className="text-white font-bold">LAT: 34.054°N · LON: 118.243°W</div>
             <div className="text-[#00E5FF]">CAM FOV: 42° · WEBGL 2.0 SHADERS ACTIVE</div>
           </div>
 
-          {/* Radar Scanline Overlay */}
           <div className="scanline absolute inset-0 pointer-events-none opacity-20 z-10" />
         </div>
       </div>
@@ -645,8 +674,21 @@ export const RescueTwinCommandCenter: React.FC = () => {
             </div>
           </div>
 
-          {/* Dual Workflow Mode Switcher */}
+          {/* 3 Workflow Mode Switchers */}
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setActiveWorkflowTab('mission_plan')}
+              className={clsx(
+                'text-xs font-mono font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5',
+                activeWorkflowTab === 'mission_plan'
+                  ? 'bg-gradient-to-r from-[#76B900]/25 to-[#00E5FF]/25 text-white border-[#76B900]/60 shadow-[0_0_15px_rgba(118,185,0,0.3)]'
+                  : 'bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.08]'
+              )}
+            >
+              <Cpu className="w-3.5 h-3.5 text-[#76B900]" />
+              <span>Nemotron Mission Planner</span>
+            </button>
+
             <button
               onClick={() => setActiveWorkflowTab('which_first')}
               className={clsx(
@@ -669,16 +711,289 @@ export const RescueTwinCommandCenter: React.FC = () => {
                   : 'bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.08]'
               )}
             >
-              <Cpu className="w-3.5 h-3.5 text-[#00E5FF]" />
+              <Zap className="w-3.5 h-3.5 text-[#00E5FF]" />
               <span>"Why is {selected.id} high priority?"</span>
             </button>
           </div>
         </div>
 
-        {/* ── WORKFLOW TAB 1: USER QUERY → RESCUE AGENT → TOOLS 1-4 → NEMOTRON → STRUCTURED RESPONSE ── */}
+        {/* ── WORKFLOW TAB 1: NEMOTRON MISSION PLANNER ──
+            User request → Nemotron → Tool selection → [get_priority, get_access, get_damage, get_building] → Nemotron → Mission plan */}
+        {activeWorkflowTab === 'mission_plan' && (
+          <div className="mt-5 space-y-5 animate-fade-in font-sans">
+            {/* Input & Request Box */}
+            <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.1] flex flex-wrap items-center justify-between gap-4">
+              <div className="space-y-1 flex-1 min-w-[280px]">
+                <div className="text-[10px] font-mono uppercase tracking-widest text-[#76B900] flex items-center gap-2 font-bold">
+                  <Cpu className="w-3 h-3 text-[#76B900]" />
+                  NEMOTRON AUTONOMOUS MISSION PLANNING LOOP
+                </div>
+                <div className="text-base sm:text-lg font-bold text-white font-mono">
+                  "{userRequestText}"
+                </div>
+                <div className="text-xs text-slate-400 font-mono">
+                  Flow: User request → Nemotron → Tool selection → [get_priority, get_access, get_damage, get_building] → Nemotron → Mission plan
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleGenerateMissionPlan()}
+                  disabled={planningMission}
+                  className="px-4 py-2.5 rounded-xl text-xs font-mono font-extrabold text-black bg-gradient-to-r from-[#76B900] to-[#00E5FF] hover:opacity-90 shadow-[0_0_20px_rgba(118,185,0,0.35)] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {planningMission ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-black" />
+                      <span>Synthesizing Mission Plan...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-black" />
+                      <span>Re-Run Nemotron Planner</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Visual Sequence Flowchart Matching User Spec */}
+            <div className="p-5 rounded-2xl bg-gradient-to-b from-[#070D1B] to-[#040815] border border-white/[0.1] shadow-2xl space-y-4">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+                <span className="flex items-center gap-2 text-white">
+                  <Network className="w-4 h-4 text-[#76B900]" />
+                  Architecture Flow: User Request to Actionable Mission Plan
+                </span>
+                <span className="text-[#76B900] flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#76B900] animate-ping" />
+                  NVIDIA NEMOTRON 70B ACTIVE
+                </span>
+              </div>
+
+              {/* 5-Step Vertical Flow with Tool Pool Box */}
+              <div className="flex flex-col items-center space-y-3 py-2">
+                {/* Node 1: User request */}
+                <div className={clsx(
+                  'w-full max-w-xl p-3 rounded-xl border text-center transition-all',
+                  activePlanStep >= 1
+                    ? 'bg-white/[0.06] border-white/20 text-white shadow-lg'
+                    : 'bg-white/[0.02] border-white/[0.05] text-slate-400 opacity-60'
+                )}>
+                  <div className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-bold">STAGE 1</div>
+                  <div className="text-sm font-mono font-bold text-white">User request: "{userRequestText}"</div>
+                </div>
+
+                <div className="text-slate-500 font-mono font-bold text-sm">↓</div>
+
+                {/* Node 2: Nemotron (Pass 1) */}
+                <div className={clsx(
+                  'w-full max-w-xl p-3 rounded-xl border text-center transition-all',
+                  activePlanStep >= 2
+                    ? 'bg-[#76B900]/15 border-[#76B900]/50 text-white shadow-[0_0_20px_rgba(118,185,0,0.25)]'
+                    : 'bg-white/[0.02] border-white/[0.05] text-slate-400 opacity-60'
+                )}>
+                  <div className="text-[10px] font-mono text-[#76B900] uppercase tracking-widest font-bold flex items-center justify-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5" /> STAGE 2: NEMOTRON (PASS 1)
+                  </div>
+                  <div className="text-xs font-mono text-slate-200 mt-0.5">
+                    Intent parsing & function selection over available GIS tools
+                  </div>
+                </div>
+
+                <div className="text-slate-500 font-mono font-bold text-sm">↓</div>
+
+                {/* Node 3: Tool selection */}
+                <div className={clsx(
+                  'w-full max-w-xl p-2.5 rounded-xl border text-center transition-all',
+                  activePlanStep >= 3
+                    ? 'bg-[#00E5FF]/10 border-[#00E5FF]/40 text-[#00E5FF]'
+                    : 'bg-white/[0.02] border-white/[0.05] text-slate-400 opacity-60'
+                )}>
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">
+                    STAGE 3: TOOL SELECTION (4 SPECIALIZED GIS APIS)
+                  </span>
+                </div>
+
+                <div className="text-slate-500 font-mono font-bold text-sm">↓</div>
+
+                {/* Node 4: The 4 Tools Pool Box (┌──────────────┐) */}
+                <div className={clsx(
+                  'w-full max-w-2xl p-4 rounded-2xl border-2 transition-all relative overflow-hidden',
+                  activePlanStep >= 4
+                    ? 'bg-black/70 border-[#00E5FF] shadow-[0_0_30px_rgba(0,229,255,0.2)]'
+                    : 'bg-black/30 border-white/[0.1] opacity-60'
+                )}>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-[#00E5FF] font-bold text-center mb-3">
+                    PARALLEL TOOL EXECUTION POOL
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                      <div className="text-[#00E5FF] font-bold">1. get_priority()</div>
+                      <div className="text-[11px] text-slate-300 mt-1">
+                        Ranked 14 targets: <strong className="text-white">#1 B027 (Score 0.912)</strong>, #2 B014.
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                      <div className="text-[#00E5FF] font-bold">2. get_access()</div>
+                      <div className="text-[11px] text-slate-300 mt-1">
+                        Evaluated road choke points: <strong className="text-red-400">Bridge 4 BLOCKED (66%)</strong>.
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                      <div className="text-[#00E5FF] font-bold">3. get_damage()</div>
+                      <div className="text-[11px] text-slate-300 mt-1">
+                        Satellite change indices: <strong>B027 (43% Major)</strong>, <strong>B014 (88% Destroyed)</strong>.
+                      </div>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+                      <div className="text-[#00E5FF] font-bold">4. get_building()</div>
+                      <div className="text-[11px] text-slate-300 mt-1">
+                        Footprints & occupancy: <strong className="text-white">5 trapped in B027</strong>, 7 in B014.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-slate-500 font-mono font-bold text-sm">↓</div>
+
+                {/* Node 5: Nemotron (Pass 2) */}
+                <div className={clsx(
+                  'w-full max-w-xl p-3 rounded-xl border text-center transition-all',
+                  activePlanStep >= 5
+                    ? 'bg-[#76B900]/15 border-[#76B900]/50 text-white shadow-[0_0_20px_rgba(118,185,0,0.25)]'
+                    : 'bg-white/[0.02] border-white/[0.05] text-slate-400 opacity-60'
+                )}>
+                  <div className="text-[10px] font-mono text-[#76B900] uppercase tracking-widest font-bold flex items-center justify-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5" /> STAGE 5: NEMOTRON (PASS 2 - TACTICAL SYNTHESIS)
+                  </div>
+                  <div className="text-xs font-mono text-slate-200 mt-0.5">
+                    Multi-constraint optimization: life-safety urgency vs. debris transit delay
+                  </div>
+                </div>
+
+                <div className="text-slate-500 font-mono font-bold text-sm">↓</div>
+
+                {/* Node 6: Mission plan */}
+                <div className={clsx(
+                  'w-full max-w-xl p-3 rounded-xl border text-center transition-all',
+                  activePlanStep >= 6
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-[#00E5FF]/20 border-emerald-500/50 text-white shadow-[0_0_25px_rgba(16,185,129,0.3)]'
+                    : 'bg-white/[0.02] border-white/[0.05] text-slate-400 opacity-60'
+                )}>
+                  <div className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold flex items-center justify-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5" /> STAGE 6: ACTIONABLE MISSION PLAN
+                  </div>
+                  <div className="text-xs font-mono font-bold text-white mt-0.5">
+                    3-Phase Triage Plan · Golden Window: 18.2 Hours · Units Dispatched
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mission Plan Content Overview */}
+            <div className="p-5 rounded-2xl bg-[#050B18] border border-[#76B900]/30 shadow-[0_0_30px_rgba(118,185,0,0.15)] space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-[#76B900]" />
+                  <span className="font-mono text-xs font-black uppercase text-white tracking-wider">
+                    ACTIONABLE 3-PHASE RESCUE MISSION PLAN
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                  GOLDEN EXTRACTION WINDOW: 18.2 HOURS
+                </span>
+              </div>
+
+              {/* 3 Tactical Phases */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+                    <span className="text-[#FF6B00]">PHASE 1 (0 - 6H)</span>
+                    <span className="text-[10px] text-slate-400">CRITICAL</span>
+                  </div>
+                  <div className="text-sm font-bold text-white">Immediate Field Inspection & Void Search</div>
+                  <ul className="text-xs text-slate-300 space-y-1.5 pt-1">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Dispatch USAR inspection team to <strong>Building B027</strong> via North Arterial Blvd.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Deploy pneumatic shoring struts at <strong>Building B014</strong> collapsed pancake slab.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Isolate ruptured gas main and establish Forward Triage HQ.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+                    <span className="text-[#00E5FF]">PHASE 2 (6 - 24H)</span>
+                    <span className="text-[10px] text-slate-400">URGENT</span>
+                  </div>
+                  <div className="text-sm font-bold text-white">Arterial Clearance & Shoring</div>
+                  <ul className="text-xs text-slate-300 space-y-1.5 pt-1">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Deploy heavy skid-steers to clear <strong>Bridge 4</strong> span blockage.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Erect laser displacement sensors to monitor <strong>Building B031</strong> facade tilt.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Begin systematic acoustic void search sweeps.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold">
+                    <span className="text-[#22C55E]">PHASE 3 (24 - 72H)</span>
+                    <span className="text-[10px] text-slate-400">SUSTAINED</span>
+                  </div>
+                  <div className="text-sm font-bold text-white">Secondary Audit & Relief</div>
+                  <ul className="text-xs text-slate-300 space-y-1.5 pt-1">
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Secondary structural audit of <strong>Building B009</strong> municipal annex.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Certify emergency safe shelters and water distribution points.</span>
+                    </li>
+                    <li className="flex items-start gap-1.5">
+                      <span className="text-emerald-400">✓</span>
+                      <span>Transition rescue teams to sustained humanitarian aid.</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="pt-2 flex justify-end">
+                <button
+                  onClick={() => navigate('/agent')}
+                  className="px-4 py-2.5 rounded-xl text-xs font-mono font-bold text-[#00E5FF] hover:text-white bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 border border-[#00E5FF]/40 flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span>Open Full Autonomous ReAct Console</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── WORKFLOW TAB 2: "WHICH BUILDINGS SHOULD WE INSPECT FIRST?" ── */}
         {activeWorkflowTab === 'which_first' && (
           <div className="mt-5 space-y-5 animate-fade-in font-sans">
-            {/* 1. User Query & Orchestration Banner */}
             <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.1] flex flex-wrap items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400 flex items-center gap-2">
@@ -716,7 +1031,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. Visual Architecture Sequence: User → Rescue Agent → Tools 1-4 → Nemotron → Structured response */}
             <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] space-y-3">
               <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
                 <span className="flex items-center gap-2 text-white">
@@ -728,9 +1042,7 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 </span>
               </div>
 
-              {/* 4 Tool Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {/* Tool 1 */}
                 <div className={clsx(
                   'p-3.5 rounded-xl border transition-all',
                   activeToolStep >= 1
@@ -751,7 +1063,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Tool 2 */}
                 <div className={clsx(
                   'p-3.5 rounded-xl border transition-all',
                   activeToolStep >= 2
@@ -772,7 +1083,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Tool 3 */}
                 <div className={clsx(
                   'p-3.5 rounded-xl border transition-all',
                   activeToolStep >= 3
@@ -793,7 +1103,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Tool 4 */}
                 <div className={clsx(
                   'p-3.5 rounded-xl border transition-all',
                   activeToolStep >= 4
@@ -815,7 +1124,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 </div>
               </div>
 
-              {/* Nemotron Processing Badge */}
               <div className="p-3 rounded-xl bg-gradient-to-r from-[#091124] to-[#070D1B] border border-white/[0.08] flex items-center justify-between text-xs font-mono">
                 <div className="flex items-center gap-2.5">
                   <div className="w-6 h-6 rounded-lg bg-[#76B900]/20 border border-[#76B900]/40 flex items-center justify-center text-[#76B900]">
@@ -835,7 +1143,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
               </div>
             </div>
 
-            {/* 3. Nemotron Structured Response Output */}
             <div className="p-5 rounded-2xl bg-[#050B18] border border-[#00E5FF]/30 shadow-[0_0_30px_rgba(0,229,255,0.15)] space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
                 <div className="flex items-center gap-2">
@@ -849,7 +1156,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 </span>
               </div>
 
-              {/* 4 Ranked Buildings Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {[
                   {
@@ -927,7 +1233,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 ))}
               </div>
 
-              {/* Tactical Directives List */}
               <div className="p-3.5 rounded-xl bg-black/60 border border-white/[0.08] space-y-1.5 text-xs font-mono">
                 <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">
                   TACTICAL FIELD DIRECTIVES
@@ -940,7 +1245,7 @@ export const RescueTwinCommandCenter: React.FC = () => {
           </div>
         )}
 
-        {/* ── WORKFLOW TAB 2: BUILDING SPECIFIC (Evidence → Damage → Access → Recommendation) ── */}
+        {/* ── WORKFLOW TAB 3: TARGET DEEP DIVE ("WHY IS B027 HIGH PRIORITY?") ── */}
         {activeWorkflowTab === 'why_b027' && (
           <div className="mt-5 space-y-5 animate-fade-in font-sans">
             <div className="flex items-center justify-between mb-3 text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
@@ -954,7 +1259,7 @@ export const RescueTwinCommandCenter: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-              {/* ── 1. EVIDENCE ── */}
+              {/* 1. Evidence */}
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#00E5FF]/40 transition-all flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
@@ -986,7 +1291,7 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 </div>
               </div>
 
-              {/* ── 2. DAMAGE ── */}
+              {/* 2. Damage */}
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#FF6B00]/40 transition-all flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
@@ -1023,7 +1328,7 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 </div>
               </div>
 
-              {/* ── 3. ACCESS ── */}
+              {/* 3. Access */}
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#00E5FF]/40 transition-all flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
@@ -1057,7 +1362,7 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 </div>
               </div>
 
-              {/* ── 4. RECOMMENDATION ── */}
+              {/* 4. Recommendation */}
               <div className="p-4 rounded-2xl bg-gradient-to-b from-[#091124] to-[#040815] border border-white/[0.12] hover:border-emerald-500/50 transition-all flex flex-col justify-between shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                 <div>
                   <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
@@ -1104,7 +1409,6 @@ export const RescueTwinCommandCenter: React.FC = () => {
               </div>
             </div>
 
-            {/* Live Dispatch Notification */}
             {dispatchSuccess && (
               <div className="mt-3 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-xs font-mono text-emerald-300 flex items-center justify-between animate-fade-in">
                 <div className="flex items-center gap-2">
