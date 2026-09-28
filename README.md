@@ -26,59 +26,84 @@ Manual inspection is slow and dangerous. Satellite imagery lacks 3D context. **R
 
 ## 🏗️ System Architecture
 
-```
-Drone Video / Images
-        │
-        ▼
- Camera Pose Estimation
-        │
-        ▼
-  3D Reconstruction
- COLMAP + Open3D
-        │
-        ▼
- Building & Road Segmentation
- (YOLOv8 + U-Net)
-        │
-        ▼
- Pre/Post Disaster Comparison
- (Siamese Network)
-        │
-        ▼
-  Damage Classification
-  (NO_DAMAGE → DESTROYED)
-        │
-        ▼
- Rescue Priority Scoring
-        │
-        ▼
- Interactive 3D Disaster Map
- (Three.js / React Three Fiber)
+```text
+                    ┌──────────────────────┐
+                    │      React UI         │
+                    │  RescueTwin Command    │
+                    │       Center          │
+                    └──────────┬───────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │      FastAPI API      │
+                    └──────────┬───────────┘
+                               │
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+       Image Pipeline     3D Pipeline      Evidence Store
+              │                │                │
+              ▼                ▼                ▼
+        YOLO / CV        Open3D / 3D       Structured JSON
+              │                │                │
+              └────────────────┼────────────────┘
+                               │
+                               ▼
+                    ┌──────────────────────┐
+                    │ RescueTwin Agent      │
+                    │ Orchestrator          │
+                    └──────────┬───────────┘
+                               │
+                     Tool selection
+                               │
+                               ▼
+                 ┌─────────────────────────┐
+                 │   Nebius Token Factory  │
+                 │                         │
+                 │ NVIDIA Nemotron         │
+                 └───────────┬─────────────┘
+                             │
+                             ▼
+                  Structured reasoning
+                             │
+              ┌──────────────┼──────────────┐
+              ▼              ▼              ▼
+        Risk Analysis   Mission Plan   Evidence Report
+              │              │              │
+              └──────────────┼──────────────┘
+                             ▼
+                  ┌──────────────────────┐
+                  │ 3D Rescue Dashboard  │
+                  │                      │
+                  │ Buildings            │
+                  │ Roads                │
+                  │ Damage               │
+                  │ Priority             │
+                  │ AI Explanation       │
+                  └──────────────────────┘
 ```
 
 ---
 
-## 🤖 NVIDIA Nemotron Autonomous Agent Pipeline
+## 🤖 Cognitive Core: Nebius Token Factory · NVIDIA Nemotron
 
-```
-Disaster Evidence (Satellite / Drone / Thermal Sensors)
-       ↓
-CV / 3D Analysis (YOLOv8 + SiameseDamageNet + Point Cloud)
-       ↓
-Evidence Store (Multi-modal Geo-referenced Intelligence Base)
-       ↓
-NVIDIA Nemotron (Llama-3.1-Nemotron-70B-Instruct Reasoning Engine)
-       ↓
-RescueTwin AI Agent (Autonomous ReAct Commander Orchestrator)
-       ↓
-Reasoning + Tool Calls (inspect_structure, assess_roads, dispatch_unit, simulate_aftershock)
-       ↓
-Actionable Rescue Plan (Golden Window Triage, Team Rosters, Evacuation Corridors)
-       ↓
-3D Command Dashboard (Real-time Spatial HUD, Three.js Twin & Field Dispatches)
-```
+RescueTwin utilizes **NVIDIA Nemotron** (via **Nebius Token Factory** and **NVIDIA NIM**) as the cognitive intelligence layer of the autonomous disaster coordinator:
 
-RescueTwin utilizes **NVIDIA Nemotron** (`meta/llama-3.1-nemotron-70b-instruct`) as the cognitive core of its autonomous disaster coordinator. The agent ingests multi-hazard evidence, performs multi-step Chain-of-Thought reasoning with real-time tool calls (structural aftershock simulations, corridor traversability, thermal victim detection), and formulates an actionable 3-phase rescue plan prioritized for the critical 72-hour Golden Window.
+- **Nebius Token Factory & NVIDIA NIM:** High-throughput inference for `nvidia/nemotron-4-340b-instruct` and `meta/llama-3.1-nemotron-70b-instruct`.
+- **Autonomous Agent Orchestrator:** Implements autonomous ReAct reasoning with live tool execution (`inspect_structure`, `assess_road_network`, `simulate_aftershock_risk`, `dispatch_rescue_unit`, `request_drone_recon`, `generate_triage_manifest`).
+- **Target Verification & Inspection (e.g., Building B-027):**
+  - **Damage:** `MAJOR`
+  - **Confidence:** `0.91`
+  - **Evidence:** `43% structural change`, `roof geometry changed`, `visible facade damage`, `nearby road partially blocked`
+  - **Priority:** `HIGH`
+  - **Recommended Action:** `Dispatch inspection team` (Units equipped with 3D Laser Scanning Kit & Structural Inclinometers)
+  - **Reason:** `High estimated structural damage + difficult access`
+- **3D Rescue Dashboard (Spatial Digital Twin):**
+  - **Buildings:** 3D bounding geometry, wireframe cages, and distress beacons.
+  - **Roads:** Interactive 3D road corridors with live blockage telemetry.
+  - **Damage:** Standardized triage color-coding (🟢 Green, 🟡 Yellow, 🟠 Orange, 🔴 Red).
+  - **Priority:** Computed urgency rankings based on trapped victim estimates and structural risk.
+  - **AI Explanation:** Real-time Chain-of-Thought reasoning HUD directly explaining triage decisions.
 
 
 ---

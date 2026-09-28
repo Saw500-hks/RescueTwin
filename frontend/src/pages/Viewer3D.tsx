@@ -5,7 +5,7 @@ import { OrbitControls, Box, Grid } from '@react-three/drei';
 import {
   Maximize, RotateCcw, Info, Target, Eye, EyeOff,
   Layers, ArrowRight, ShieldAlert, Sparkles, Navigation,
-  Compass, Zap, Crosshair, CheckCircle2, AlertTriangle, Send, Loader2
+  Compass, Zap, Crosshair, CheckCircle2, AlertTriangle, Send, Loader2, Cpu
 } from 'lucide-react';
 import { DamageLevel } from '../types';
 import { executeAgentTool } from '../api/client';
@@ -125,15 +125,126 @@ const BuildingMesh = ({
   );
 };
 
+interface TacticalRoad {
+  id: string;
+  name: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  length: number;
+  width: number;
+  status: 'CLEAR' | 'RESTRICTED' | 'BLOCKED';
+  blockagePct: number;
+  description: string;
+}
+
+const demoRoads: TacticalRoad[] = [
+  {
+    id: 'ROAD-01',
+    name: 'North Arterial Expressway (Grand Ave)',
+    position: [-1.5, 0.015, 0],
+    rotation: [-Math.PI / 2, 0, 0],
+    length: 56,
+    width: 3.2,
+    status: 'CLEAR',
+    blockagePct: 0,
+    description: 'Primary 4-lane ingress route fully cleared for emergency medical and USAR transit.'
+  },
+  {
+    id: 'ROAD-02',
+    name: 'Sector 7 Access Road (B-027 Corridor)',
+    position: [0.5, 0.02, 2.5],
+    rotation: [-Math.PI / 2, 0, Math.PI / 2],
+    length: 32,
+    width: 2.6,
+    status: 'RESTRICTED',
+    blockagePct: 45,
+    description: 'Partially blocked near Building B-027 by fallen masonry and power cables. Caution advised.'
+  },
+  {
+    id: 'ROAD-03',
+    name: 'Bridge 4 Overpass Arterial',
+    position: [6, 0.025, -4],
+    rotation: [-Math.PI / 2, 0, 0.45],
+    length: 34,
+    width: 3.0,
+    status: 'BLOCKED',
+    blockagePct: 85,
+    description: 'Impassable. Structural slab displacement requires front-loaders for heavy debris clearance.'
+  }
+];
+
+const RoadMesh = ({
+  r, isSelected, onSelect
+}: { r: TacticalRoad; isSelected: boolean; onSelect: (r: TacticalRoad) => void }) => {
+  const [hovered, setHovered] = useState(false);
+  const statusColor = r.status === 'CLEAR' ? '#22C55E' : r.status === 'RESTRICTED' ? '#EAB308' : '#EF4444';
+
+  return (
+    <group position={r.position} rotation={r.rotation}>
+      {/* Road Base Surface */}
+      <mesh
+        onClick={(e) => { e.stopPropagation(); onSelect(r); }}
+        onPointerOver={() => { document.body.style.cursor = 'pointer'; setHovered(true); }}
+        onPointerOut={() => { document.body.style.cursor = 'auto'; setHovered(false); }}
+      >
+        <planeGeometry args={[r.width, r.length]} />
+        <meshStandardMaterial
+          color="#0F172A"
+          roughness={0.85}
+          metalness={0.1}
+        />
+      </mesh>
+
+      {/* Glowing Edge Curbs */}
+      <mesh position={[-r.width / 2, 0, 0.005]}>
+        <planeGeometry args={[0.16, r.length]} />
+        <meshBasicMaterial color={statusColor} transparent opacity={isSelected ? 0.95 : hovered ? 0.75 : 0.5} />
+      </mesh>
+      <mesh position={[r.width / 2, 0, 0.005]}>
+        <planeGeometry args={[0.16, r.length]} />
+        <meshBasicMaterial color={statusColor} transparent opacity={isSelected ? 0.95 : hovered ? 0.75 : 0.5} />
+      </mesh>
+
+      {/* Center Dashed Marking */}
+      <mesh position={[0, 0, 0.006]}>
+        <planeGeometry args={[0.1, r.length]} />
+        <meshBasicMaterial color={isSelected ? '#00E5FF' : '#94A3B8'} transparent opacity={0.5} />
+      </mesh>
+
+      {/* Blockage Obstacle Visualizer for Blocked / Restricted Roads */}
+      {r.status === 'BLOCKED' && (
+        <group position={[0, 0, 0.35]}>
+          <Box scale={[r.width * 0.75, 1.2, 0.5]}>
+            <meshStandardMaterial color="#EF4444" roughness={0.5} metalness={0.2} />
+          </Box>
+        </group>
+      )}
+      {r.status === 'RESTRICTED' && (
+        <group position={[r.width * 0.22, 0, 0.2]}>
+          <Box scale={[r.width * 0.45, 0.8, 0.35]}>
+            <meshStandardMaterial color="#EAB308" roughness={0.5} metalness={0.2} />
+          </Box>
+        </group>
+      )}
+    </group>
+  );
+};
+
 const DemoScene = ({
   selected,
   onSelect,
+  selectedRoad,
+  onSelectRoad,
   showGrid,
+  showRoads,
   activeFilter
 }: {
   selected: Building | null;
   onSelect: (b: Building | null) => void;
+  selectedRoad: TacticalRoad | null;
+  onSelectRoad: (r: TacticalRoad | null) => void;
   showGrid: boolean;
+  showRoads: boolean;
   activeFilter: string | null;
 }) => {
   const filterMap: Record<string, DamageLevel> = {
@@ -177,13 +288,29 @@ const DemoScene = ({
         />
       )}
 
+      {/* 3D Road Network Corridors */}
+      {showRoads && demoRoads.map((r) => (
+        <RoadMesh
+          key={r.id}
+          r={r}
+          isSelected={selectedRoad?.id === r.id}
+          onSelect={(road) => {
+            onSelectRoad(road);
+            onSelect(null);
+          }}
+        />
+      ))}
+
       {/* Buildings Meshes */}
       {filtered.map((b) => (
         <BuildingMesh
           key={b.id}
           b={b}
           isSelected={selected?.id === b.id}
-          onSelect={onSelect}
+          onSelect={(bldg) => {
+            onSelect(bldg);
+            onSelectRoad(null);
+          }}
         />
       ))}
     </>
@@ -200,7 +327,10 @@ const damageSummary = [
 const Viewer3D = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<Building | null>(demoBuildings[0]);
+  const [selectedRoad, setSelectedRoad] = useState<TacticalRoad | null>(null);
   const [showGrid, setShowGrid] = useState(true);
+  const [showRoads, setShowRoads] = useState(true);
+  const [showAiExplanation, setShowAiExplanation] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -229,6 +359,7 @@ const Viewer3D = () => {
 
   const handleResetView = () => {
     setSelected(demoBuildings[0]);
+    setSelectedRoad(null);
     setActiveFilter(null);
     if (controlsRef.current) {
       controlsRef.current.reset();
@@ -252,14 +383,17 @@ const Viewer3D = () => {
       <Canvas
         camera={{ position: [20, 16, 20], fov: 45 }}
         shadows
-        onClick={() => setSelected(null)}
+        onClick={() => { setSelected(null); setSelectedRoad(null); }}
         style={{ background: 'linear-gradient(180deg, #090F1F 0%, #050811 100%)' }}
       >
         <fog attach="fog" args={['#050811', 45, 90]} />
         <DemoScene
           selected={selected}
           onSelect={setSelected}
+          selectedRoad={selectedRoad}
+          onSelectRoad={setSelectedRoad}
           showGrid={showGrid}
+          showRoads={showRoads}
           activeFilter={activeFilter}
         />
         <OrbitControls
@@ -279,13 +413,13 @@ const Viewer3D = () => {
           <div className="w-2.5 h-2.5 rounded-full bg-[#00E5FF] animate-pulse" />
           <div>
             <div className="text-xs font-mono font-bold text-white flex items-center gap-2">
-              <span>3D DIGITAL TWIN · SECTOR ALPHA</span>
+              <span>3D RESCUE DASHBOARD · SECTOR ALPHA</span>
               <span className="text-[10px] text-[#00E5FF] font-normal px-1.5 py-0.2 rounded bg-[#00E5FF]/10 border border-[#00E5FF]/30">
-                LIVE SPATIAL MESH
+                LIVE SPATIAL TWIN
               </span>
             </div>
             <div className="text-[10px] font-mono text-[#8A99AD]">
-              8 TARGET STRUCTURES IDENTIFIED · ORBIT & PAN WITH MOUSE / TOUCH
+              9 BUILDINGS · 3 INGRESS ROADS · NEMOTRON AI EXPLANATION ACTIVE
             </div>
           </div>
         </div>
@@ -293,15 +427,22 @@ const Viewer3D = () => {
         {/* Quick Toolbar */}
         <div className="flex items-center gap-2 pointer-events-auto">
           {[
-            { icon: RotateCcw, title: 'Reset View Angle', onClick: handleResetView },
-            { icon: showGrid ? Eye : EyeOff, title: showGrid ? 'Hide Grid' : 'Show Grid', onClick: () => setShowGrid(g => !g) },
-            { icon: Maximize, title: 'Fullscreen', onClick: handleToggleFullscreen },
-          ].map(({ icon: Icon, title, onClick }, i) => (
+            { icon: RotateCcw, title: 'Reset View Angle', onClick: handleResetView, active: false },
+            { icon: showGrid ? Eye : EyeOff, title: showGrid ? 'Hide Grid' : 'Show Grid', onClick: () => setShowGrid(g => !g), active: showGrid },
+            { icon: Navigation, title: showRoads ? 'Hide Roads' : 'Show Roads', onClick: () => setShowRoads(r => !r), active: showRoads },
+            { icon: Cpu, title: showAiExplanation ? 'Hide AI Explanation' : 'Show AI Explanation', onClick: () => setShowAiExplanation(a => !a), active: showAiExplanation },
+            { icon: Maximize, title: 'Fullscreen', onClick: handleToggleFullscreen, active: false },
+          ].map(({ icon: Icon, title, onClick, active }, i) => (
             <button
               key={i}
               title={title}
               onClick={onClick}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#070B16]/90 backdrop-blur-md border border-white/[0.1] text-[#A0AEC0] hover:text-[#00E5FF] hover:border-[#00E5FF]/40 transition-all cursor-pointer shadow-lg hover:scale-105"
+              className={clsx(
+                'w-10 h-10 flex items-center justify-center rounded-xl backdrop-blur-md border transition-all cursor-pointer shadow-lg hover:scale-105',
+                active
+                  ? 'bg-[#00E5FF]/15 border-[#00E5FF]/50 text-[#00E5FF]'
+                  : 'bg-[#070B16]/90 border-white/[0.1] text-[#A0AEC0] hover:text-[#00E5FF] hover:border-[#00E5FF]/40'
+              )}
             >
               <Icon className="w-4 h-4" />
             </button>
@@ -511,6 +652,99 @@ const Viewer3D = () => {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Bottom Left: Selected Road Corridor HUD */}
+      {selectedRoad && (
+        <div className="absolute bottom-6 left-4 z-10 w-[310px] md:w-[340px] bg-[#070B16]/95 backdrop-blur-xl border border-white/[0.12] rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] p-5 space-y-3 font-mono animate-fade-in-up">
+          <div className="flex items-center justify-between border-b border-white/[0.08] pb-3">
+            <div className="flex items-center gap-2">
+              <Navigation className="w-4 h-4 text-[#00E5FF]" />
+              <span className="text-xs font-bold text-white uppercase">{selectedRoad.id}</span>
+            </div>
+            <button onClick={() => setSelectedRoad(null)} className="text-slate-400 hover:text-white cursor-pointer">×</button>
+          </div>
+          <div className="text-sm font-bold text-white">{selectedRoad.name}</div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-slate-400">Passability:</span>
+            <span className={clsx(
+              'px-2 py-0.5 rounded text-[10px] font-bold uppercase',
+              selectedRoad.status === 'CLEAR' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' :
+              selectedRoad.status === 'RESTRICTED' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' :
+              'bg-red-500/20 text-red-300 border border-red-500/40'
+            )}>
+              {selectedRoad.status} ({selectedRoad.blockagePct}% Blockage)
+            </span>
+          </div>
+          <div className="text-xs text-slate-300 bg-white/[0.03] p-2.5 rounded-xl border border-white/[0.06] leading-relaxed">
+            {selectedRoad.description}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            Assigned Clearing Asset: <strong className="text-white">{selectedRoad.status === 'BLOCKED' ? 'Front-Loader + Heavy Crane' : selectedRoad.status === 'RESTRICTED' ? 'Debris Skid-Steer Crew' : 'Arterial Escort Patrol'}</strong>
+          </div>
+        </div>
+      )}
+
+      {/* Top Right: NVIDIA Nemotron / Nebius Token Factory AI Explanation HUD */}
+      {showAiExplanation && (
+        <div className="absolute top-20 right-4 z-10 w-[310px] md:w-[350px] bg-[#070B16]/95 backdrop-blur-xl border border-white/[0.12] rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden animate-fade-in text-xs font-mono">
+          <div className="px-4 py-3 border-b border-white/[0.08] flex items-center justify-between bg-gradient-to-r from-[#091124] to-[#070D1B]">
+            <div className="flex items-center gap-2">
+              <Cpu className="w-4 h-4 text-[#76B900]" />
+              <span className="font-bold text-white tracking-wide">AI EXPLANATION</span>
+            </div>
+            <span className="text-[9px] px-2 py-0.5 rounded font-extrabold bg-[#76B900]/20 text-[#76B900] border border-[#76B900]/40">
+              NEBIUS · NEMOTRON
+            </span>
+          </div>
+
+          <div className="p-4 space-y-3">
+            {/* 5 Architecture Elements Summary */}
+            <div className="grid grid-cols-2 gap-2 text-[10px]">
+              <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div className="text-slate-400">BUILDINGS</div>
+                <div className="font-bold text-white text-xs mt-0.5">9 Monitored</div>
+              </div>
+              <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div className="text-slate-400">ROADS</div>
+                <div className="font-bold text-[#00E5FF] text-xs mt-0.5">3 Corridors (1 Clear)</div>
+              </div>
+              <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div className="text-slate-400">DAMAGE</div>
+                <div className="font-bold text-[#FF6B00] text-xs mt-0.5">3 Major · 2 Destroyed</div>
+              </div>
+              <div className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                <div className="text-slate-400">PRIORITY</div>
+                <div className="font-bold text-amber-400 text-xs mt-0.5">#1 Clinic · #2 B-027</div>
+              </div>
+            </div>
+
+            {/* Structured Reasoning Text */}
+            <div className="p-3 rounded-xl bg-black/60 border border-white/[0.08] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-[#00E5FF]" />
+                  Structured Reasoning
+                </span>
+                <span className="text-[9px] text-emerald-400 font-bold">Confidence 91%</span>
+              </div>
+              <p className="text-[11px] text-slate-200 leading-relaxed font-sans">
+                "Sector 7 seismic deformation shows <strong className="text-white">Building B-027</strong> with 43% structural change, altered roof geometry, and 45% road obstruction. High estimated damage with difficult access mandates priority inspection dispatch. Direct heavy evacuation through <strong className="text-emerald-400">North Arterial Blvd</strong>; bypass damaged <strong className="text-red-400">Bridge 4</strong> until earthmoving equipment clears concrete blockages."
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+              <span>Golden Window: <strong className="text-amber-400">18.5 Hours</strong></span>
+              <button
+                onClick={() => navigate('/agent')}
+                className="text-[#00E5FF] hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <span>Mission Plan</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

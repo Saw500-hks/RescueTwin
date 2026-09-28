@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Cpu, Zap, ShieldAlert, Activity, CheckCircle2, ChevronRight,
   Terminal, Compass, AlertTriangle, ArrowRight, Layers, Box,
-  Play, RefreshCw, Send, Radio, UserCheck, MapPin, Truck, Flame, Droplets, Sparkles
+  Play, RefreshCw, Send, Radio, UserCheck, MapPin, Truck, Flame, Droplets, Sparkles, Network
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
@@ -43,6 +43,7 @@ const AgentCommandCenter: React.FC = () => {
   const [rescuePlan, setRescuePlan] = useState<ActionableRescuePlan | null>(null);
   const [activeTab, setActiveTab] = useState<'plan' | 'dispatches' | 'corridors' | 'evidence'>('plan');
   const [selectedToolDetails, setSelectedToolDetails] = useState<ToolCallRecord | null>(null);
+  const [showArchitectureModal, setShowArchitectureModal] = useState<boolean>(false);
 
   // Load initial data
   useEffect(() => {
@@ -125,7 +126,7 @@ const AgentCommandCenter: React.FC = () => {
           <div className="flex items-center gap-2 mb-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
               <Cpu className="w-3 h-3 text-[#76B900]" />
-              NVIDIA NEMOTRON REASONING ENGINE
+              NEBIUS TOKEN FACTORY · NVIDIA NEMOTRON
             </span>
             <span className="text-[11px] font-mono text-slate-400">
               AUTONOMOUS DISASTER RESPONSE AGENT
@@ -139,18 +140,30 @@ const AgentCommandCenter: React.FC = () => {
           </p>
         </div>
 
-        {/* NVIDIA NIM Model Telemetry Card */}
-        <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#090F1F] border border-white/[0.08] shadow-card">
-          <div className="w-10 h-10 rounded-xl bg-[#76B900]/15 border border-[#76B900]/30 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(118,185,0,0.3)]">
-            <Cpu className="w-5 h-5 text-[#76B900]" />
-          </div>
-          <div className="text-left font-mono">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Inference Engine</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#76B900] animate-pulse" />
+        {/* Action Controls & Nebius / NVIDIA NIM Model Telemetry Card */}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setShowArchitectureModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 border border-[#00E5FF]/30 text-white font-mono text-xs font-bold transition-all cursor-pointer shadow-[0_0_15px_rgba(0,229,255,0.15)] hover:border-[#00E5FF]/60"
+          >
+            <Network className="w-4 h-4 text-[#00E5FF]" />
+            <span>System Topology</span>
+          </button>
+
+          <div className="flex items-center gap-3 p-3 rounded-2xl bg-[#090F1F] border border-white/[0.08] shadow-card">
+            <div className="w-10 h-10 rounded-xl bg-[#76B900]/15 border border-[#76B900]/30 flex items-center justify-center flex-shrink-0 shadow-[0_0_15px_rgba(118,185,0,0.3)]">
+              <Cpu className="w-5 h-5 text-[#76B900]" />
             </div>
-            <div className="text-xs font-bold text-white">meta/llama-3.1-nemotron-70b</div>
-            <div className="text-[10px] text-emerald-400 font-semibold">NIM Active · ReAct Function Calling Enabled</div>
+            <div className="text-left font-mono">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">
+                  {agentStatus?.token_factory || 'Nebius Token Factory'}
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#76B900] animate-pulse" />
+              </div>
+              <div className="text-xs font-bold text-white">NVIDIA Nemotron</div>
+              <div className="text-[10px] text-emerald-400 font-semibold">{agentStatus?.model || 'meta/llama-3.1-nemotron-70b'}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -764,6 +777,203 @@ const AgentCommandCenter: React.FC = () => {
               <pre className="p-3 rounded-lg bg-black/60 text-emerald-300 font-mono text-[11px] overflow-x-auto max-h-60">
                 {JSON.stringify(selectedToolDetails.result, null, 2)}
               </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* System Architecture Topology Modal (Matching Complete Specification) */}
+      {showArchitectureModal && (
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#070D1B] border border-white/20 rounded-2xl p-6 md:p-8 max-w-4xl w-full shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto font-mono">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#00E5FF]/10 border border-[#00E5FF]/30 flex items-center justify-center">
+                  <Network className="w-5 h-5 text-[#00E5FF]" />
+                </div>
+                <div>
+                  <h2 className="text-base font-extrabold text-white">RESCUETWIN SYSTEM ARCHITECTURE</h2>
+                  <p className="text-[11px] text-slate-400">Complete Multi-Modal AI Agent & Spatial Twin Pipeline</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowArchitectureModal(false)}
+                className="text-slate-400 hover:text-white text-sm px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer"
+              >
+                Close ✕
+              </button>
+            </div>
+
+            {/* Visual System Nodes matching the diagram */}
+            <div className="space-y-4 text-center">
+              {/* Node 1: React UI */}
+              <div className="mx-auto max-w-sm p-4 rounded-xl bg-[#0A1224] border border-[#00E5FF]/40 shadow-[0_0_20px_rgba(0,229,255,0.2)]">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    PRESENTATION LAYER
+                  </span>
+                  <span className="text-[10px] text-slate-400">Vite · React 18</span>
+                </div>
+                <div className="text-sm font-extrabold text-white">React UI</div>
+                <div className="text-xs text-[#00E5FF]">RescueTwin Command Center</div>
+              </div>
+
+              <div className="text-[#00E5FF] text-lg font-bold">↓</div>
+
+              {/* Node 2: FastAPI API */}
+              <div className="mx-auto max-w-sm p-3.5 rounded-xl bg-[#0A1224] border border-white/15">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    BACKEND GATEWAY
+                  </span>
+                  <span className="text-[10px] text-slate-400">Port 8000</span>
+                </div>
+                <div className="text-sm font-extrabold text-white">FastAPI API</div>
+              </div>
+
+              <div className="text-slate-500 text-sm font-mono font-bold hidden sm:block">
+                ┌──────────────────────────────────────────────┼──────────────────────────────────────────────┐
+              </div>
+
+              {/* Tri-branch: Ingestion & Analysis */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
+                {/* Branch 1: Image Pipeline */}
+                <div className="p-3.5 rounded-xl bg-[#080E1C] border border-white/10 space-y-2">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Image Processing</div>
+                  <div className="text-xs font-bold text-white">Image Pipeline</div>
+                  <div className="text-center text-slate-500 font-bold">↓</div>
+                  <div className="p-2 rounded bg-black/40 border border-white/5 text-[11px] text-[#00E5FF] font-bold text-center">
+                    YOLO / CV
+                  </div>
+                  <div className="text-[10px] text-slate-400">Building Footprint & Damage Segmentation</div>
+                </div>
+
+                {/* Branch 2: 3D Pipeline */}
+                <div className="p-3.5 rounded-xl bg-[#080E1C] border border-white/10 space-y-2">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Spatial Reconstruction</div>
+                  <div className="text-xs font-bold text-white">3D Pipeline</div>
+                  <div className="text-center text-slate-500 font-bold">↓</div>
+                  <div className="p-2 rounded bg-black/40 border border-white/5 text-[11px] text-[#FF6B00] font-bold text-center">
+                    Open3D / 3D
+                  </div>
+                  <div className="text-[10px] text-slate-400">Point Cloud Differencing & Mesh Deformation</div>
+                </div>
+
+                {/* Branch 3: Evidence Store */}
+                <div className="p-3.5 rounded-xl bg-[#080E1C] border border-white/10 space-y-2">
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Intelligence Base</div>
+                  <div className="text-xs font-bold text-white">Evidence Store</div>
+                  <div className="text-center text-slate-500 font-bold">↓</div>
+                  <div className="p-2 rounded bg-black/40 border border-white/5 text-[11px] text-emerald-400 font-bold text-center">
+                    Structured JSON
+                  </div>
+                  <div className="text-[10px] text-slate-400">Geo-referenced Multi-hazard Intelligence Database</div>
+                </div>
+              </div>
+
+              <div className="text-slate-500 text-sm font-mono font-bold hidden sm:block">
+                └──────────────────────────────────────────────┬──────────────────────────────────────────────┘
+              </div>
+              <div className="text-[#00E5FF] text-lg font-bold">↓</div>
+
+              {/* Node 4: RescueTwin Agent Orchestrator */}
+              <div className="mx-auto max-w-md p-4 rounded-xl bg-gradient-to-r from-cyan-950/30 via-[#0A1224] to-cyan-950/30 border border-[#00E5FF]/40 shadow-[0_0_20px_rgba(0,229,255,0.2)]">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-cyan-400 font-bold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#00E5FF] animate-pulse" />
+                    AUTONOMOUS ORCHESTRATOR
+                  </span>
+                  <span className="text-[10px] text-slate-400">ReAct Decision Loop</span>
+                </div>
+                <div className="text-sm font-extrabold text-white">RescueTwin Agent Orchestrator</div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-bold">
+                <span>Tool selection</span>
+                <span className="text-[#76B900]">↓</span>
+              </div>
+
+              {/* Node 5: Nebius Token Factory / NVIDIA Nemotron */}
+              <div className="mx-auto max-w-md p-4 rounded-xl bg-[#091124] border border-[#76B900]/40 shadow-[0_0_25px_rgba(118,185,0,0.25)] space-y-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-[#76B900] font-bold flex items-center gap-1.5">
+                    <Cpu className="w-3.5 h-3.5 text-[#76B900]" />
+                    INFERENCE ENGINE
+                  </span>
+                  <span className="text-[10px] text-slate-400">OpenAI-Compatible</span>
+                </div>
+                <div className="text-sm font-extrabold text-white">Nebius Token Factory</div>
+                <div className="text-xs font-bold text-[#76B900]">NVIDIA Nemotron (meta/llama-3.1-nemotron-70b-instruct)</div>
+              </div>
+
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-400 font-bold">
+                <span>Structured reasoning</span>
+                <span className="text-[#00E5FF]">↓</span>
+              </div>
+
+              {/* Tri-branch: Reasoning Outputs */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-left">
+                <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-xs font-bold text-amber-400">Risk Analysis</div>
+                  <div className="text-[10px] text-slate-400">Aftershock collapse physics & structural integrity stress-testing</div>
+                </div>
+                <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-xs font-bold text-[#00E5FF]">Mission Plan</div>
+                  <div className="text-[10px] text-slate-400">3-Phase tactical timeline, unit dispatches & route clearances</div>
+                </div>
+                <div className="p-3 rounded-xl bg-black/40 border border-white/10 space-y-1">
+                  <div className="text-xs font-bold text-emerald-400">Evidence Report</div>
+                  <div className="text-[10px] text-slate-400">Building B-027 triage card, 43% deformation & access blockage</div>
+                </div>
+              </div>
+
+              <div className="text-slate-500 text-sm font-mono font-bold hidden sm:block">
+                └──────────────────────────────────────────────┬──────────────────────────────────────────────┘
+              </div>
+              <div className="text-[#00E5FF] text-lg font-bold">↓</div>
+
+              {/* Node 7: 3D Rescue Dashboard */}
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-[#070D1B] via-[#09152C] to-[#070D1B] border border-[#00E5FF]/40 shadow-[0_0_30px_rgba(0,229,255,0.3)] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-white uppercase flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-[#00E5FF]" />
+                    3D RESCUE DASHBOARD
+                  </span>
+                  <button
+                    onClick={() => { setShowArchitectureModal(false); navigate('/viewer'); }}
+                    className="btn-primary py-1.5 px-3 text-[11px] font-bold flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(0,229,255,0.3)]"
+                  >
+                    <span>Launch 3D Twin</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs">
+                  <div className="p-2.5 rounded-lg bg-black/50 border border-white/10">
+                    <div className="text-slate-400 text-[10px]">BUILDINGS</div>
+                    <div className="font-bold text-white mt-0.5">3D Spatial Meshes</div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-black/50 border border-white/10">
+                    <div className="text-slate-400 text-[10px]">ROADS</div>
+                    <div className="font-bold text-[#00E5FF] mt-0.5">3 Corridors</div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-black/50 border border-white/10">
+                    <div className="text-slate-400 text-[10px]">DAMAGE</div>
+                    <div className="font-bold text-[#FF6B00] mt-0.5">Color Triage</div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-black/50 border border-white/10">
+                    <div className="text-slate-400 text-[10px]">PRIORITY</div>
+                    <div className="font-bold text-amber-400 mt-0.5">Rank 1 to 4</div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-black/50 border border-white/10 col-span-2 sm:col-span-1">
+                    <div className="text-slate-400 text-[10px]">AI EXPLANATION</div>
+                    <div className="font-bold text-[#76B900] mt-0.5">Nemotron Reasoning</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

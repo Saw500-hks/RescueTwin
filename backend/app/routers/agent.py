@@ -22,12 +22,14 @@ MISSION_PLANS: Dict[str, ActionableRescuePlan] = {}
 
 @router.get("/status")
 async def get_agent_status():
-    """Returns AI Agent status, model details, and NVIDIA Nemotron connectivity."""
+    """Returns AI Agent status, model details, token factory, and NVIDIA Nemotron connectivity."""
     return {
         "status": "ready",
         "agent": "RescueTwin Autonomous AI Commander",
+        "provider": nemotron_client.provider_name,
+        "token_factory": "Nebius Token Factory" if nemotron_client.has_nebius else ("NVIDIA NIM" if nemotron_client.has_nvidia else "Nebius Token Factory / NVIDIA Nemotron"),
         "model": nemotron_client.model,
-        "live_nvidia_nim_connected": nemotron_client.has_api_key,
+        "live_connected": nemotron_client.has_api_key,
         "available_tools": [t["function"]["name"] for t in NEMOTRON_TOOL_DEFINITIONS],
         "tool_count": len(NEMOTRON_TOOL_DEFINITIONS)
     }
