@@ -164,6 +164,36 @@ class RescueTwinAgent:
             })
             await asyncio.sleep(0.2)
 
+        # Step 4.5: Assess Building B-027 (CV/3D Analysis & Inspection Dispatch)
+        b027 = evidence_store.get_evidence_item(scenario_id, "B-027")
+        if b027:
+            await emit(
+                "SITUATION_ASSESSMENT",
+                f"CV / 3D Analysis Alert: {b027.name} ({b027.building_id}). "
+                f"Damage: {b027.damage_level} | Confidence: {b027.confidence}. "
+                f"Evidence: • 43% structural change • roof geometry changed • visible facade damage • nearby road partially blocked. "
+                f"Priority: {b027.priority or 'HIGH'}.",
+                obs="Computer Vision & 3D Point Cloud deformation detected."
+            )
+            await emit("TOOL_EXECUTION", f"Inspecting structural changes, access corridor, and aftershock risk for {b027.name}...", tool_name="inspect_structure")
+            await run_tool("inspect_structure", {"building_id": "B-027", "scenario_id": scenario_id})
+
+            await emit(
+                "ACTION_PLANNING",
+                f"Building B-027 Evaluation: Priority HIGH. "
+                f"Reason: High estimated structural damage + difficult access. "
+                f"Recommended action: Dispatch inspection team.",
+                obs="Dispatching specialized structural inspection & clearance unit."
+            )
+            await run_tool("dispatch_rescue_unit", {
+                "target_building_id": "B-027",
+                "unit_type": "INSPECTION_TEAM",
+                "priority_rank": 2,
+                "personnel_count": 4,
+                "scenario_id": scenario_id
+            })
+            await asyncio.sleep(0.2)
+
         # Step 5: Synthesize Actionable Rescue Plan
         await emit(
             "ACTION_PLANNING",
@@ -210,6 +240,7 @@ class RescueTwinAgent:
                 objective="Extract 22 high-probability trapped survivors from void spaces in collapsed soft-story medical clinic and senior facility.",
                 actions=[
                     "Deploy pneumatic shoring jacks at Metro Central Health Clinic western void space prior to personnel entry",
+                    "Dispatch structural inspection team to Building B-027 (43% structural change, roof deformation, partially blocked road)",
                     "Isolate ruptured medical oxygen and gas lines with Hazmat squad suppression foam",
                     "K9 sweep at Grandview Tower ground floor collapse perimeter",
                     "Establish Mobile Medical Trauma Tent at Union Elementary School parking grounds"
@@ -259,6 +290,7 @@ class RescueTwinAgent:
             evacuation_corridors=corridors,
             critical_alerts=[
                 "🚨 CRITICAL COLLAPSE WARNING: Metro Health Clinic has 94% aftershock vulnerability. Mechanical shoring required before entry.",
+                "⚠️ BUILDING B-027 INSPECTION: 43% structural change, roof geometry changed, visible facade damage, nearby road partially blocked. Inspection team dispatched.",
                 "⚠️ HAZARD: High-voltage live cable dangling across 7th Street. Grid isolation required.",
                 "⏳ GOLDEN WINDOW: 18.5 hours remaining until survivor hypothermia and trauma mortality rises sharply."
             ]

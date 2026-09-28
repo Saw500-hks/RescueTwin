@@ -55,3 +55,35 @@ async def test_agent_run_mission():
     assert len(plan.phases) == 3
     assert len(plan.dispatches) >= 1
     assert len(plan.evacuation_corridors) >= 1
+
+def test_building_b027_evidence_and_inspection():
+    b027 = evidence_store.get_evidence_item("scenario_earthquake_74", "B-027")
+    assert b027 is not None
+    assert b027.building_id == "B-027"
+    assert b027.damage_level == "MAJOR"
+    assert b027.confidence == 0.91
+    assert b027.priority == "HIGH"
+    assert b027.recommended_action == "Dispatch inspection team"
+    assert b027.reason == "High estimated structural damage + difficult access"
+    assert len(b027.evidence) == 4
+    assert "43% structural change" in b027.evidence
+    assert "roof geometry changed" in b027.evidence
+    assert "visible facade damage" in b027.evidence
+    assert "nearby road partially blocked" in b027.evidence
+
+    # Test inspect_structure tool output
+    diag = inspect_structure("B-027", "scenario_earthquake_74")
+    assert diag["status"] == "success"
+    assert diag["damage"] == "MAJOR"
+    assert diag["confidence"] == 0.91
+    assert diag["priority"] == "HIGH"
+    assert diag["recommended_action"] == "Dispatch inspection team"
+    assert diag["reason"] == "High estimated structural damage + difficult access"
+    assert diag["evidence"] == b027.evidence
+
+    # Test dispatching inspection team
+    disp = dispatch_rescue_unit("B-027", "INSPECTION_TEAM", priority_rank=1, scenario_id="scenario_earthquake_74")
+    assert disp["status"] == "success"
+    assert disp["dispatch"]["unit_type"] == "INSPECTION_TEAM"
+    assert disp["dispatch"]["target_building_id"] == "B-027"
+

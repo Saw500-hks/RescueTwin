@@ -27,8 +27,23 @@ interface PriorityItem {
 
 const priorities: PriorityItem[] = [
   {
-    id: 'BLD-901',
+    id: 'Building B-027',
     rank: 1,
+    score: 96,
+    level: 'MAJOR',
+    tier: 'HIGH',
+    access: false,
+    priorityReason: 'High estimated structural damage + difficult access. Evidence: 43% structural change, roof geometry changed, visible facade damage, nearby road partially blocked.',
+    notes: 'Recommended action: Dispatch inspection team. 43% structural deformation detected via CV/3D analysis. Confidence: 0.91.',
+    coords: '34.054°N, 118.243°W',
+    estimatedOccupancy: '~5',
+    responseTime: '8 min',
+    color: '#FF6B00',
+    recommendedUnits: '1x Structural Inspection Team + 1x Debris Clearance Unit',
+  },
+  {
+    id: 'BLD-901',
+    rank: 2,
     score: 98,
     level: 'DESTROYED',
     tier: 'HIGH',

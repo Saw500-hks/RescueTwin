@@ -18,6 +18,7 @@ class UnitType(str, Enum):
     HAZMAT_SQUAD = "HAZMAT_SQUAD"
     DRONE_RECON = "DRONE_RECON"
     ENGINEERING_CORPS = "ENGINEERING_CORPS"
+    INSPECTION_TEAM = "INSPECTION_TEAM"
 
 class EvidenceItem(BaseModel):
     id: str
@@ -37,6 +38,12 @@ class EvidenceItem(BaseModel):
     hazards: List[str] = Field(default_factory=list)
     aftershock_collapse_risk: float = 0.0
     status: str = "PENDING_RESCUE"
+    # Deep CV / 3D Point Cloud Analysis telemetry
+    structural_change_pct: Optional[float] = None
+    evidence: List[str] = Field(default_factory=list)
+    priority: Optional[str] = None
+    recommended_action: Optional[str] = None
+    reason: Optional[str] = None
 
 class DisasterScenario(BaseModel):
     scenario_id: str

@@ -34,6 +34,40 @@ class EvidenceStore:
 
         bldgs1 = [
             EvidenceItem(
+                id="EVD-027",
+                building_id="B-027",
+                name="Building B-027",
+                damage_level="MAJOR",
+                confidence=0.91,
+                lat=34.0545,
+                lng=-118.2430,
+                elevation_m=20.0,
+                area_sqm=1650.0,
+                estimated_victims=5,
+                victim_confidence=0.89,
+                debris_density=0.62,
+                road_access=False,
+                road_blockage_pct=45.0,
+                hazards=[
+                    "43% structural change",
+                    "Roof geometry changed",
+                    "Visible facade damage",
+                    "Nearby road partially blocked"
+                ],
+                structural_change_pct=43.0,
+                evidence=[
+                    "43% structural change",
+                    "roof geometry changed",
+                    "visible facade damage",
+                    "nearby road partially blocked"
+                ],
+                priority="HIGH",
+                recommended_action="Dispatch inspection team",
+                reason="High estimated structural damage + difficult access",
+                aftershock_collapse_risk=0.82,
+                status="PENDING_INSPECTION"
+            ),
+            EvidenceItem(
                 id="EVD-001",
                 building_id="BLD-ALPHA-01",
                 name="Metro Central Health Clinic",

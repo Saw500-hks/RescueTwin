@@ -220,6 +220,85 @@ const AgentCommandCenter: React.FC = () => {
             );
           })}
         </div>
+
+        {/* ========================================================
+            FEATURED CASE STUDY: BUILDING B-027 END-TO-END PIPELINE
+           ======================================================== */}
+        <div className="mt-4 pt-4 border-t border-white/[0.08]">
+          <div className="p-4 rounded-xl bg-gradient-to-r from-amber-500/10 via-[#070D1B] to-cyan-500/10 border border-amber-500/30 shadow-[0_0_25px_rgba(245,158,11,0.15)] space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B00] animate-ping" />
+                <span className="text-xs font-mono font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                  <span>TARGET CASE STUDY · BUILDING B-027</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-[#FF6B00]/20 text-[#FF6B00] border border-[#FF6B00]/40">
+                    DAMAGE: MAJOR · CONFIDENCE: 0.91
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigate('/viewer')}
+                  className="px-3 py-1.5 rounded-lg bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 border border-[#00E5FF]/30 text-[#00E5FF] text-[11px] font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Box className="w-3.5 h-3.5" />
+                  <span>View in 3D Twin</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+              {/* Evidence Box */}
+              <div className="p-3 rounded-lg bg-black/50 border border-white/5 space-y-1.5">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold flex items-center justify-between">
+                  <span>Evidence:</span>
+                  <span className="text-[#00E5FF]">CV/3D Analysis</span>
+                </div>
+                <ul className="space-y-1 text-slate-200 text-[11px]">
+                  <li className="flex items-start gap-1.5"><span className="text-[#FF6B00] font-bold">•</span> 43% structural change</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#FF6B00] font-bold">•</span> roof geometry changed</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#FF6B00] font-bold">•</span> visible facade damage</li>
+                  <li className="flex items-start gap-1.5"><span className="text-[#FF6B00] font-bold">•</span> nearby road partially blocked</li>
+                </ul>
+              </div>
+
+              {/* Priority Box */}
+              <div className="p-3 rounded-lg bg-black/50 border border-white/5 space-y-1.5">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Priority:</div>
+                <div>
+                  <span className="inline-block px-2.5 py-1 rounded text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    HIGH
+                  </span>
+                </div>
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold pt-1">Confidence:</div>
+                <div className="text-sm font-bold text-emerald-400">0.91 (91%)</div>
+              </div>
+
+              {/* Action Box */}
+              <div className="p-3 rounded-lg bg-black/50 border border-white/5 space-y-1.5">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Recommended action:</div>
+                <div className="text-white font-bold flex items-center gap-1.5 text-xs">
+                  <ShieldAlert className="w-4 h-4 text-[#00E5FF] flex-shrink-0" />
+                  <span>Dispatch inspection team</span>
+                </div>
+                <div className="text-[10px] text-slate-400 pt-1">
+                  Assigned Gear: 3D Laser Scanning Kit + Inclinometer
+                </div>
+              </div>
+
+              {/* Reason Box */}
+              <div className="p-3 rounded-lg bg-black/50 border border-white/5 space-y-1.5">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Reason:</div>
+                <div className="text-slate-300 text-[11px] leading-relaxed">
+                  High estimated structural damage + difficult access
+                </div>
+                <div className="pt-1">
+                  <span className="text-[10px] text-cyan-300">NVIDIA Nemotron ReAct Validated</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ========================================================
@@ -626,6 +705,26 @@ const AgentCommandCenter: React.FC = () => {
                       <div className="text-[10px] text-red-300 flex items-center gap-1.5 pt-0.5">
                         <AlertTriangle className="w-3 h-3 text-red-400 flex-shrink-0" />
                         <span>Hazards: {ev.hazards.join(', ')}</span>
+                      </div>
+                    )}
+                    {ev.evidence && ev.evidence.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-white/[0.08] space-y-1.5 font-mono text-[11px]">
+                        <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Evidence:</div>
+                        <ul className="space-y-0.5 text-slate-200">
+                          {ev.evidence.map((item, idx) => (
+                            <li key={idx} className="flex items-start gap-1.5">
+                              <span className="text-[#FF6B00] font-bold">•</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="flex flex-wrap items-center gap-4 text-[10px] text-slate-400 pt-1">
+                          <span>Priority: <strong className="text-amber-400">{ev.priority || 'HIGH'}</strong></span>
+                          <span>Confidence: <strong className="text-emerald-400">{ev.confidence}</strong></span>
+                        </div>
+                        <div className="bg-white/[0.03] p-2 rounded-lg border border-white/[0.06] text-[11px] text-slate-300">
+                          <strong className="text-white">Action:</strong> {ev.recommended_action || 'Dispatch inspection team'} · <span className="text-slate-400">{ev.reason || 'High estimated structural damage + difficult access'}</span>
+                        </div>
                       </div>
                     )}
                   </div>

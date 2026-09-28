@@ -19,12 +19,26 @@ def inspect_structure(building_id: str, scenario_id: str = "scenario_earthquake_
     integrity_score = round(max(0.05, 1.0 - (item.debris_density * 0.7 + item.aftershock_collapse_risk * 0.3)), 2)
     void_spaces = "High probability of survivable triangular void spaces under western collapsed slab" if item.damage_level in ["DESTROYED", "MAJOR"] else "Interior partitions intact"
     
+    evidence_list = item.evidence or [
+        f"{int(item.debris_density * 100)}% structural change",
+        "roof geometry changed",
+        "visible facade damage",
+        "nearby road partially blocked"
+    ]
+
     return {
         "status": "success",
         "building_id": item.building_id,
         "name": item.name,
+        "damage": item.damage_level,
         "damage_level": item.damage_level,
+        "confidence": item.confidence,
         "cv_confidence": item.confidence,
+        "evidence": evidence_list,
+        "priority": item.priority or ("HIGH" if item.damage_level in ["DESTROYED", "MAJOR"] else "MEDIUM"),
+        "recommended_action": item.recommended_action or ("Dispatch inspection team" if not item.road_access else "Deploy USAR Search Team"),
+        "reason": item.reason or "High estimated structural damage + difficult access",
+        "structural_change_pct": item.structural_change_pct or 43.0,
         "structural_integrity_score": integrity_score,
         "debris_density": item.debris_density,
         "estimated_trapped_survivors": item.estimated_victims,
@@ -33,6 +47,7 @@ def inspect_structure(building_id: str, scenario_id: str = "scenario_earthquake_
         "active_hazards": item.hazards,
         "aftershock_collapse_risk": item.aftershock_collapse_risk,
         "road_access_passable": item.road_access,
+        "road_blockage_pct": item.road_blockage_pct,
         "coordinates": {"lat": item.lat, "lng": item.lng, "elevation_m": item.elevation_m}
     }
 
@@ -134,7 +149,8 @@ def dispatch_rescue_unit(
         UnitType.MEDICAL_EVAC: ["Advanced Trauma Kits", "Portable Oxygen Tanks", "Defibrillators", "Spine Immobilizers"],
         UnitType.HAZMAT_SQUAD: ["Level-A Chemical Suits", "Multi-Gas Detectors", "Decontamination Sprayers"],
         UnitType.DRONE_RECON: ["FLIR Thermal Radiometric Sensor", "3D LiDAR Scanner", "Emergency Broadcast Speaker"],
-        UnitType.ENGINEERING_CORPS: ["Laser Structural Displacement Monitors", "Heavy Steel I-Beam Shoring", "Concrete Breakers"]
+        UnitType.ENGINEERING_CORPS: ["Laser Structural Displacement Monitors", "Heavy Steel I-Beam Shoring", "Concrete Breakers"],
+        UnitType.INSPECTION_TEAM: ["3D Laser Scanning Kit", "Structural Inclinometer", "High-Resolution Drone", "Field Access Rigging"]
     }
 
     eta = math.ceil(12 + (item.road_blockage_pct * 0.25))

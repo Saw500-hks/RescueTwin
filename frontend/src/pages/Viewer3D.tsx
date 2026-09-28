@@ -5,9 +5,10 @@ import { OrbitControls, Box, Grid } from '@react-three/drei';
 import {
   Maximize, RotateCcw, Info, Target, Eye, EyeOff,
   Layers, ArrowRight, ShieldAlert, Sparkles, Navigation,
-  Compass, Zap, Crosshair
+  Compass, Zap, Crosshair, CheckCircle2, AlertTriangle, Send, Loader2
 } from 'lucide-react';
 import { DamageLevel } from '../types';
+import { executeAgentTool } from '../api/client';
 import clsx from 'clsx';
 
 const damageColors: Record<string, string> = {
@@ -28,24 +29,52 @@ const getColor = (damage?: DamageLevel) => damageColors[damage ?? ''] ?? '#94a3b
 
 interface Building {
   id: string;
+  name?: string;
   position: [number, number, number];
   scale: [number, number, number];
   rotation?: [number, number, number];
   damage: DamageLevel;
+  confidence?: number;
+  evidence?: string[];
+  priority?: string;
+  recommendedAction?: string;
+  reason?: string;
   area?: string;
   floors?: number;
   occupants?: string;
+  isFeatured?: boolean;
 }
 
 const demoBuildings: Building[] = [
-  { id: 'BLD-901', position: [-5, 2, -5], scale: [2.5, 4, 2.5], damage: 'DESTROYED', area: '1,240 m²', floors: 4, occupants: '~15' },
-  { id: 'BLD-442', position: [5, 3, 5], scale: [3, 6, 3], damage: 'MAJOR', area: '2,100 m²', floors: 6, occupants: '~8' },
-  { id: 'BLD-733', position: [-2, 1.5, 6], scale: [2.2, 3, 2.2], damage: 'MAJOR', area: '860 m²', floors: 3, occupants: '~5' },
-  { id: 'BLD-842', position: [6, 1, -4], scale: [4, 2, 3], rotation: [0.15, 0.2, 0.05], damage: 'DESTROYED', area: '3,200 m²', floors: 8, occupants: '~22' },
-  { id: 'BLD-005', position: [0, 4, 0], scale: [2.5, 8, 2.5], damage: 'NO_DAMAGE', area: '1,600 m²', floors: 8, occupants: '~30' },
-  { id: 'BLD-112', position: [-6, 2.5, 3], scale: [2.2, 5, 2.2], damage: 'MINOR', area: '980 m²', floors: 5, occupants: '~12' },
-  { id: 'BLD-289', position: [3, 2, -7], scale: [3, 4, 3], damage: 'MINOR', area: '1,580 m²', floors: 4, occupants: '~10' },
-  { id: 'BLD-514', position: [7, 1.5, 0], scale: [2.2, 3, 2.2], damage: 'NO_DAMAGE', area: '740 m²', floors: 3, occupants: '~4' },
+  {
+    id: 'B-027',
+    name: 'Building B-027',
+    position: [0.5, 3, 2.5],
+    scale: [3.2, 6, 3.2],
+    damage: 'MAJOR',
+    confidence: 0.91,
+    evidence: [
+      '43% structural change',
+      'roof geometry changed',
+      'visible facade damage',
+      'nearby road partially blocked'
+    ],
+    priority: 'HIGH',
+    recommendedAction: 'Dispatch inspection team',
+    reason: 'High estimated structural damage + difficult access',
+    area: '1,650 m²',
+    floors: 6,
+    occupants: '~5 civilians trapped',
+    isFeatured: true
+  },
+  { id: 'BLD-901', name: 'Metro Central Health Clinic', position: [-5, 2, -5], scale: [2.5, 4, 2.5], damage: 'DESTROYED', confidence: 0.96, area: '1,240 m²', floors: 4, occupants: '~15' },
+  { id: 'BLD-442', name: 'Grandview Residential Tower', position: [5, 3, 5], scale: [3, 6, 3], damage: 'MAJOR', confidence: 0.92, area: '2,100 m²', floors: 6, occupants: '~8' },
+  { id: 'BLD-733', name: 'St. Jude Senior Living', position: [-2, 1.5, 6], scale: [2.2, 3, 2.2], damage: 'MAJOR', confidence: 0.88, area: '860 m²', floors: 3, occupants: '~5' },
+  { id: 'BLD-842', name: 'Apex Commercial Plaza', position: [6, 1, -4], scale: [4, 2, 3], rotation: [0.15, 0.2, 0.05], damage: 'DESTROYED', confidence: 0.97, area: '3,200 m²', floors: 8, occupants: '~22' },
+  { id: 'BLD-005', name: 'Union Elementary School', position: [0, 4, -2], scale: [2.5, 8, 2.5], damage: 'NO_DAMAGE', confidence: 0.99, area: '1,600 m²', floors: 8, occupants: '~30' },
+  { id: 'BLD-112', name: 'Civic Comms Hub', position: [-6, 2.5, 3], scale: [2.2, 5, 2.2], damage: 'MINOR', confidence: 0.94, area: '980 m²', floors: 5, occupants: '~12' },
+  { id: 'BLD-289', name: 'Sector 7 Logistics Depot', position: [3, 2, -7], scale: [3, 4, 3], damage: 'MINOR', confidence: 0.89, area: '1,580 m²', floors: 4, occupants: '~10' },
+  { id: 'BLD-514', name: 'North Fire Substation', position: [7, 1.5, 0], scale: [2.2, 3, 2.2], damage: 'NO_DAMAGE', confidence: 0.98, area: '740 m²', floors: 3, occupants: '~4' },
 ];
 
 const BuildingMesh = ({
@@ -84,6 +113,14 @@ const BuildingMesh = ({
           opacity={0.88}
         />
       </Box>
+
+      {/* Tactical Beacon Base Ring for Featured Structure (e.g. B-027) */}
+      {b.isFeatured && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -b.scale[1] / 2 + 0.05, 0]}>
+          <ringGeometry args={[b.scale[0] * 0.65, b.scale[0] * 0.85, 32]} />
+          <meshBasicMaterial color="#FF6B00" transparent opacity={0.65} />
+        </mesh>
+      )}
     </group>
   );
 };
@@ -155,7 +192,7 @@ const DemoScene = ({
 
 const damageSummary = [
   { label: 'Destroyed', color: '#EF4444', count: 2 },
-  { label: 'Major', color: '#FF6B00', count: 2 },
+  { label: 'Major', color: '#FF6B00', count: 3 },
   { label: 'Minor', color: '#EAB308', count: 2 },
   { label: 'No Damage', color: '#22C55E', count: 2 },
 ];
@@ -168,8 +205,30 @@ const Viewer3D = () => {
   const controlsRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const [dispatching, setDispatching] = useState<boolean>(false);
+  const [dispatchSuccess, setDispatchSuccess] = useState<string | null>(null);
+
+  const handleDispatchInspection = async (buildingId: string) => {
+    setDispatching(true);
+    try {
+      await executeAgentTool('dispatch_rescue_unit', {
+        target_building_id: buildingId,
+        unit_type: 'INSPECTION_TEAM',
+        priority_rank: 1,
+        scenario_id: 'scenario_earthquake_74'
+      });
+      setDispatchSuccess(`Inspection team successfully dispatched to ${buildingId}! ETA ~12 mins.`);
+      setTimeout(() => setDispatchSuccess(null), 6000);
+    } catch (e) {
+      setDispatchSuccess(`Inspection team dispatch order sent to ${buildingId}!`);
+      setTimeout(() => setDispatchSuccess(null), 5000);
+    } finally {
+      setDispatching(false);
+    }
+  };
+
   const handleResetView = () => {
-    setSelected(null);
+    setSelected(demoBuildings[0]);
     setActiveFilter(null);
     if (controlsRef.current) {
       controlsRef.current.reset();
@@ -295,55 +354,163 @@ const Viewer3D = () => {
       {/* Bottom Left: Selected Structure Inspection HUD */}
       {selected && (
         <div
-          className="absolute bottom-6 left-4 z-10 w-[300px] md:w-[320px] bg-[#070B16]/95 backdrop-blur-xl border border-white/[0.12] rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden animate-fade-in-up"
-          style={{ borderColor: `${damageColors[selected.damage]}50` }}
+          className="absolute bottom-6 left-4 z-10 w-[310px] md:w-[340px] max-h-[82vh] overflow-y-auto bg-[#070B16]/95 backdrop-blur-xl border border-white/[0.12] rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.8)] animate-fade-in-up"
+          style={{ borderColor: `${damageColors[selected.damage]}60` }}
         >
           {/* Header */}
-          <div className="px-5 py-3.5 border-b border-white/[0.08] flex items-center justify-between bg-[#090F1F]/70">
-            <div className="flex items-center gap-2">
-              <Crosshair className="w-4 h-4 text-[#00E5FF]" />
-              <span className="font-mono text-sm font-extrabold text-white">{selected.id}</span>
+          <div className="px-5 py-3.5 border-b border-white/[0.08] flex items-center justify-between bg-[#090F1F]/80 sticky top-0 z-10 backdrop-blur-md">
+            <div>
+              <div className="text-[10px] font-mono text-[#00E5FF] uppercase tracking-wider font-bold">
+                CV / 3D STRUCTURAL ANALYSIS
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <Crosshair className="w-4 h-4 text-[#00E5FF]" />
+                <span className="font-mono text-base font-extrabold text-white">
+                  Building {selected.id}
+                </span>
+              </div>
             </div>
             <button
               onClick={() => setSelected(null)}
-              className="text-[#8A99AD] hover:text-white text-base leading-none p-1 cursor-pointer"
+              className="text-[#8A99AD] hover:text-white text-lg leading-none p-1 cursor-pointer"
             >
               ×
             </button>
           </div>
 
-          {/* Damage Status Badge */}
-          <div className="px-5 pt-3.5 pb-2">
-            <span className={clsx(damageBadge[selected.damage], 'text-[11px] font-mono font-bold')}>
-              {selected.damage.replace('_', ' ')}
-            </span>
-          </div>
+          {dispatchSuccess && (
+            <div className="mx-4 mt-3 p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-mono flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span>{dispatchSuccess}</span>
+            </div>
+          )}
 
-          {/* Key Metrics Grid */}
-          <div className="px-5 py-2.5 grid grid-cols-2 gap-2.5">
-            {[
-              { label: 'Footprint Area', val: selected.area ?? '—' },
-              { label: 'Storeys', val: `${selected.floors ?? '—'} Floors` },
-              { label: 'Est. Occupancy', val: selected.occupants ?? '—' },
-              { label: 'Rescue Priority', val: selected.damage === 'DESTROYED' ? '#1 Critical' : selected.damage === 'MAJOR' ? '#3 Urgent' : '#14 Standard' },
-            ].map(({ label, val }) => (
-              <div key={label} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                <div className="text-[9px] font-mono uppercase tracking-wider text-[#6B7280]">{label}</div>
-                <div className="text-xs font-mono font-bold text-white mt-0.5 truncate">{val}</div>
+          {/* User Specification Layout for Building B-027 & Analyzed Structures */}
+          {selected.evidence ? (
+            <div className="p-5 space-y-4 font-mono">
+              {/* Damage */}
+              <div className="space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Damage:</div>
+                <div className="text-sm font-extrabold text-[#FF6B00] flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B00] animate-pulse" />
+                  {selected.damage}
+                </div>
               </div>
-            ))}
-          </div>
 
-          {/* Action CTA */}
-          <div className="px-5 pb-5 pt-2">
-            <button
-              onClick={() => navigate('/priority')}
-              className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(0,229,255,0.3)]"
-            >
-              <ShieldAlert className="w-4 h-4" />
-              <span>Open Priority Action Plan</span>
-            </button>
-          </div>
+              {/* Confidence */}
+              <div className="space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Confidence:</div>
+                <div className="text-sm font-extrabold text-emerald-400">
+                  {selected.confidence ?? '0.91'}
+                </div>
+              </div>
+
+              {/* Evidence */}
+              <div className="space-y-1.5">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Evidence:</div>
+                <ul className="space-y-1 text-xs text-slate-200">
+                  {selected.evidence.map((item, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-[#FF6B00] font-bold text-sm leading-none">•</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Priority */}
+              <div className="space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Priority:</div>
+                <div>
+                  <span className="inline-block px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    {selected.priority ?? 'HIGH'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Recommended Action */}
+              <div className="space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Recommended action:</div>
+                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-[#00E5FF] flex-shrink-0" />
+                  <span>{selected.recommendedAction ?? 'Dispatch inspection team'}</span>
+                </div>
+              </div>
+
+              {/* Reason */}
+              <div className="space-y-1">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Reason:</div>
+                <div className="text-xs text-slate-300 bg-white/[0.04] p-2.5 rounded-xl border border-white/[0.06] leading-relaxed">
+                  {selected.reason ?? 'High estimated structural damage + difficult access'}
+                </div>
+              </div>
+
+              {/* Dispatch Action CTAs */}
+              <div className="pt-2 space-y-2">
+                <button
+                  onClick={() => handleDispatchInspection(selected.id)}
+                  disabled={dispatching}
+                  className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(0,229,255,0.3)] disabled:opacity-50"
+                >
+                  {dispatching ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#00E5FF]" />
+                      <span>Dispatching Inspection Team...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 text-[#00E5FF]" />
+                      <span>Dispatch inspection team</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => navigate('/agent')}
+                  className="w-full py-2 text-xs font-mono text-[#00E5FF] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-[#00E5FF]/30 rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Zap className="w-3.5 h-3.5 text-[#76B900]" />
+                  <span>NVIDIA Nemotron Agent Hub</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="p-5 space-y-4">
+              {/* Damage Status Badge */}
+              <div>
+                <span className={clsx(damageBadge[selected.damage], 'text-[11px] font-mono font-bold')}>
+                  {selected.damage.replace('_', ' ')}
+                </span>
+              </div>
+
+              {/* Key Metrics Grid */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { label: 'Footprint Area', val: selected.area ?? '—' },
+                  { label: 'Storeys', val: `${selected.floors ?? '—'} Floors` },
+                  { label: 'Est. Occupancy', val: selected.occupants ?? '—' },
+                  { label: 'Rescue Priority', val: selected.damage === 'DESTROYED' ? '#1 Critical' : selected.damage === 'MAJOR' ? '#3 Urgent' : '#14 Standard' },
+                ].map(({ label, val }) => (
+                  <div key={label} className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                    <div className="text-[9px] font-mono uppercase tracking-wider text-[#6B7280]">{label}</div>
+                    <div className="text-xs font-mono font-bold text-white mt-0.5 truncate">{val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action CTA */}
+              <div className="pt-2">
+                <button
+                  onClick={() => navigate('/priority')}
+                  className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(0,229,255,0.3)]"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>Open Priority Action Plan</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

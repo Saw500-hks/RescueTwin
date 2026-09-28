@@ -55,7 +55,7 @@ export interface ReconstructionResult {
 // NVIDIA NEMOTRON AI AGENT TYPES
 // ==========================================
 
-export type UnitType = 'USAR_HEAVY' | 'K9_SEARCH' | 'MEDICAL_EVAC' | 'HAZMAT_SQUAD' | 'DRONE_RECON' | 'ENGINEERING_CORPS';
+export type UnitType = 'USAR_HEAVY' | 'K9_SEARCH' | 'MEDICAL_EVAC' | 'HAZMAT_SQUAD' | 'DRONE_RECON' | 'ENGINEERING_CORPS' | 'INSPECTION_TEAM';
 export type ThreatLevel = 'EXTREME' | 'CRITICAL' | 'HIGH' | 'MODERATE';
 
 export interface EvidenceItem {
@@ -76,6 +76,12 @@ export interface EvidenceItem {
   hazards: string[];
   aftershock_collapse_risk: number;
   status: string;
+  // Deep CV / 3D Analysis fields
+  structural_change_pct?: number;
+  evidence?: string[];
+  priority?: string;
+  recommended_action?: string;
+  reason?: string;
 }
 
 export interface DisasterScenario {
