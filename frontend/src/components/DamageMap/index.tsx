@@ -143,8 +143,11 @@ const DamageMap: React.FC = () => {
   const [showLayers, setShowLayers] = useState(true);
   const [showHeatZone, setShowHeatZone] = useState(true);
 
+  const cartoKey = import.meta.env.VITE_CARTO_API_KEY || 'cb1_4264_1_3438c67ecbcbe54961ebf696';
   const TILE_URLS = {
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    dark: cartoKey 
+      ? `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=${cartoKey}`
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     osm: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   };

@@ -213,10 +213,14 @@ const INITIAL_SITES: GeoLocationSite[] = [
   },
 ];
 
+const CARTO_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_4264_1_3438c67ecbcbe54961ebf696';
+
 const TILE_LAYERS = {
   dark: {
     name: 'Tactical Dark',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    url: CARTO_KEY 
+      ? `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
+      : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     attribution: '&copy; <a href="https://carto.com/">CARTO</a> OpenStreetMap',
   },
   satellite: {
