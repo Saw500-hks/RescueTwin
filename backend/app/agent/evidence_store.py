@@ -42,12 +42,16 @@ class EvidenceStore:
                 lat=34.0545,
                 lng=-118.2430,
                 elevation_m=20.0,
-                area_sqm=1650.0,
+                area_sqm=482.4,
+                building_area=482.4,
+                damage_score=0.91,
                 estimated_victims=5,
                 victim_confidence=0.89,
                 debris_density=0.62,
                 road_access=False,
-                road_blockage_pct=45.0,
+                road_access_ratio=0.34,
+                road_blockage_pct=66.0,
+                change_score=0.76,
                 hazards=[
                     "43% structural change",
                     "Roof geometry changed",
@@ -56,6 +60,9 @@ class EvidenceStore:
                 ],
                 structural_change_pct=43.0,
                 evidence=[
+                    "pre_post_difference",
+                    "roof_change",
+                    "facade_change",
                     "43% structural change",
                     "roof geometry changed",
                     "visible facade damage",
@@ -183,6 +190,8 @@ class EvidenceStore:
             )
         ]
         self._evidence[scen1_id] = {b.building_id: b for b in bldgs1}
+        if "B-027" in self._evidence[scen1_id]:
+            self._evidence[scen1_id]["B027"] = self._evidence[scen1_id]["B-027"]
 
         # Scenario 2: Category 5 Hurricane Flooding
         scen2_id = "scenario_hurricane_cat5"
@@ -253,7 +262,15 @@ class EvidenceStore:
         return list(self._evidence.get(scenario_id, {}).values())
 
     def get_evidence_item(self, scenario_id: str, building_id: str) -> Optional[EvidenceItem]:
-        return self._evidence.get(scenario_id, {}).get(building_id)
+        scenario_ev = self._evidence.get(scenario_id, {})
+        if building_id in scenario_ev:
+            return scenario_ev[building_id]
+        # Normalized lookup (handles B027 <-> B-027, b027, etc.)
+        norm = building_id.replace("-", "").replace("_", "").replace(" ", "").upper()
+        for b_id, item in scenario_ev.items():
+            if b_id.replace("-", "").replace("_", "").replace(" ", "").upper() == norm:
+                return item
+        return None
 
     def add_evidence(self, scenario_id: str, item: EvidenceItem):
         if scenario_id not in self._evidence:

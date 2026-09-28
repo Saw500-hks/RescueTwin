@@ -44,6 +44,10 @@ class EvidenceItem(BaseModel):
     priority: Optional[str] = None
     recommended_action: Optional[str] = None
     reason: Optional[str] = None
+    damage_score: Optional[float] = None
+    building_area: Optional[float] = None
+    road_access_ratio: Optional[float] = None
+    change_score: Optional[float] = None
 
 class DisasterScenario(BaseModel):
     scenario_id: str

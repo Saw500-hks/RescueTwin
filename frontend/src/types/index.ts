@@ -82,6 +82,20 @@ export interface EvidenceItem {
   priority?: string;
   recommended_action?: string;
   reason?: string;
+  damage_score?: number;
+  building_area?: number;
+  road_access_ratio?: number;
+  change_score?: number;
+}
+
+export interface StructuredDamageTelemetry {
+  building_id: string;
+  damage: DamageLevel | string;
+  damage_score: number;
+  building_area: number;
+  road_access: number;
+  change_score: number;
+  evidence: string[];
 }
 
 export interface DisasterScenario {

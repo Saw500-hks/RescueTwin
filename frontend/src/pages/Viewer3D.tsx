@@ -35,6 +35,10 @@ interface Building {
   rotation?: [number, number, number];
   damage: DamageLevel;
   confidence?: number;
+  damageScore?: number;
+  buildingArea?: number;
+  roadAccess?: number;
+  changeScore?: number;
   evidence?: string[];
   priority?: string;
   recommendedAction?: string;
@@ -47,13 +51,21 @@ interface Building {
 
 const demoBuildings: Building[] = [
   {
-    id: 'B-027',
-    name: 'Building B-027',
+    id: 'B027',
+    name: 'Building B027 (B-027)',
     position: [0.5, 3, 2.5],
     scale: [3.2, 6, 3.2],
     damage: 'MAJOR',
     confidence: 0.91,
+    damageScore: 0.91,
+    buildingArea: 482.4,
+    area: '482.4 m²',
+    roadAccess: 0.34,
+    changeScore: 0.76,
     evidence: [
+      'pre_post_difference',
+      'roof_change',
+      'facade_change',
       '43% structural change',
       'roof geometry changed',
       'visible facade damage',
@@ -62,7 +74,6 @@ const demoBuildings: Building[] = [
     priority: 'HIGH',
     recommendedAction: 'Dispatch inspection team',
     reason: 'High estimated structural damage + difficult access',
-    area: '1,650 m²',
     floors: 6,
     occupants: '~5 civilians trapped',
     isFeatured: true
@@ -529,28 +540,56 @@ const Viewer3D = () => {
           {/* User Specification Layout for Building B-027 & Analyzed Structures */}
           {selected.evidence ? (
             <div className="p-5 space-y-4 font-mono">
-              {/* Damage */}
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Damage:</div>
-                <div className="text-sm font-extrabold text-[#FF6B00] flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B00] animate-pulse" />
-                  {selected.damage}
+              {/* Damage & Confidence Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Damage:</div>
+                  <div className="text-sm font-extrabold text-[#FF6B00] flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B00] animate-pulse" />
+                    {selected.damage}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Confidence:</div>
+                  <div className="text-sm font-extrabold text-emerald-400">
+                    {selected.confidence ?? '0.91'}
+                  </div>
                 </div>
               </div>
 
-              {/* Confidence */}
-              <div className="space-y-1">
-                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Confidence:</div>
-                <div className="text-sm font-extrabold text-emerald-400">
-                  {selected.confidence ?? '0.91'}
+              {/* Structured Machine-Readable Telemetry Grid */}
+              <div className="grid grid-cols-2 gap-2 text-[10px] bg-black/40 p-2.5 rounded-xl border border-white/[0.08]">
+                <div className="p-1.5 rounded bg-white/[0.03]">
+                  <div className="text-slate-400">DAMAGE SCORE</div>
+                  <div className="text-white font-bold text-xs mt-0.5">{selected.damageScore ?? 0.91}</div>
+                </div>
+                <div className="p-1.5 rounded bg-white/[0.03]">
+                  <div className="text-slate-400">BUILDING AREA</div>
+                  <div className="text-white font-bold text-xs mt-0.5">{selected.buildingArea ? `${selected.buildingArea} m²` : (selected.area ?? '482.4 m²')}</div>
+                </div>
+                <div className="p-1.5 rounded bg-white/[0.03]">
+                  <div className="text-slate-400">ROAD ACCESS</div>
+                  <div className="text-amber-400 font-bold text-xs mt-0.5">{selected.roadAccess ?? 0.34} (34%)</div>
+                </div>
+                <div className="p-1.5 rounded bg-white/[0.03]">
+                  <div className="text-slate-400">CHANGE SCORE</div>
+                  <div className="text-[#FF6B00] font-bold text-xs mt-0.5">{selected.changeScore ?? 0.76} (76%)</div>
                 </div>
               </div>
 
               {/* Evidence */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Evidence:</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {selected.evidence.filter(e => e.includes('_')).map((item, idx) => (
+                    <span key={idx} className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/30">
+                      #{item}
+                    </span>
+                  ))}
+                </div>
                 <ul className="space-y-1 text-xs text-slate-200">
-                  {selected.evidence.map((item, idx) => (
+                  {selected.evidence.filter(e => !e.includes('_')).map((item, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="text-[#FF6B00] font-bold text-sm leading-none">•</span>
                       <span>{item}</span>

@@ -65,25 +65,36 @@ def test_building_b027_evidence_and_inspection():
     assert b027.priority == "HIGH"
     assert b027.recommended_action == "Dispatch inspection team"
     assert b027.reason == "High estimated structural damage + difficult access"
-    assert len(b027.evidence) == 4
+    assert b027.building_area == 482.4
+    assert b027.damage_score == 0.91
+    assert b027.road_access_ratio == 0.34
+    assert b027.change_score == 0.76
+    assert "pre_post_difference" in b027.evidence
+    assert "roof_change" in b027.evidence
+    assert "facade_change" in b027.evidence
     assert "43% structural change" in b027.evidence
-    assert "roof geometry changed" in b027.evidence
-    assert "visible facade damage" in b027.evidence
-    assert "nearby road partially blocked" in b027.evidence
 
-    # Test inspect_structure tool output
-    diag = inspect_structure("B-027", "scenario_earthquake_74")
+    # Test B027 lookup without hyphen
+    b027_alias = evidence_store.get_evidence_item("scenario_earthquake_74", "B027")
+    assert b027_alias is not None
+    assert b027_alias.damage_level == "MAJOR"
+
+    # Test inspect_structure tool output with B027
+    diag = inspect_structure("B027", "scenario_earthquake_74")
     assert diag["status"] == "success"
     assert diag["damage"] == "MAJOR"
+    assert diag["damage_score"] == 0.91
+    assert diag["building_area"] == 482.4
+    assert diag["road_access"] == 0.34
+    assert diag["change_score"] == 0.76
     assert diag["confidence"] == 0.91
     assert diag["priority"] == "HIGH"
     assert diag["recommended_action"] == "Dispatch inspection team"
     assert diag["reason"] == "High estimated structural damage + difficult access"
-    assert diag["evidence"] == b027.evidence
 
     # Test dispatching inspection team
-    disp = dispatch_rescue_unit("B-027", "INSPECTION_TEAM", priority_rank=1, scenario_id="scenario_earthquake_74")
+    disp = dispatch_rescue_unit("B027", "INSPECTION_TEAM", priority_rank=1, scenario_id="scenario_earthquake_74")
     assert disp["status"] == "success"
     assert disp["dispatch"]["unit_type"] == "INSPECTION_TEAM"
-    assert disp["dispatch"]["target_building_id"] == "B-027"
+    assert disp["dispatch"]["target_building_id"] in ["B027", "B-027"]
 

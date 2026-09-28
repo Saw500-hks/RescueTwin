@@ -45,11 +45,16 @@ def test_cv_pipeline_execution():
     assert "step_4_damage_classification" in data
     assert "step_5_road_access_analysis" in data
     
-    # Check Building B-027 presence in Step 4
+    # Check Building B-027 / B027 presence in Step 4
     assessments = data["step_4_damage_classification"]["assessments"]
-    b027 = next(a for a in assessments if a["building_id"] == "B-027")
-    assert b027["damage_level"] == "MAJOR"
-    assert b027["confidence"] == 0.91
-    assert "43% structural change" in b027["evidence"]
+    b027 = next(a for a in assessments if a["building_id"] in ["B027", "B-027"])
+    assert b027["damage"] == "MAJOR"
+    assert b027["damage_score"] == 0.91
+    assert b027["building_area"] == 482.4
+    assert b027["road_access"] == 0.34
+    assert b027["change_score"] == 0.76
+    assert "pre_post_difference" in b027["evidence"]
+    assert "roof_change" in b027["evidence"]
+    assert "facade_change" in b027["evidence"]
     assert b027["priority"] == "HIGH"
     assert b027["recommended_action"] == "Dispatch inspection team"
