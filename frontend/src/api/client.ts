@@ -120,3 +120,36 @@ export const runCVPipeline = async (preFile?: File | null, postFile?: File | nul
   return res.data;
 };
 
+// ==========================================
+// 4-TIER FULL-STACK SYSTEM PIPELINE
+// Frontend -> API -> GPU inference / CV -> Nebius Token Factory
+// ==========================================
+
+export const getPipelineArchitecture = async () => {
+  const res = await api.get('/pipeline/architecture');
+  return res.data;
+};
+
+export const runFullStackPipeline = async (params?: {
+  scenarioId?: string;
+  userRequest?: string;
+  preFile?: File | null;
+  postFile?: File | null;
+}) => {
+  if (params?.preFile || params?.postFile) {
+    const formData = new FormData();
+    if (params.preFile) formData.append('pre', params.preFile);
+    if (params.postFile) formData.append('post', params.postFile);
+    if (params.scenarioId) formData.append('scenario_id', params.scenarioId);
+    if (params.userRequest) formData.append('user_request', params.userRequest);
+    const res = await api.post('/pipeline/run-full-stack-upload', formData);
+    return res.data;
+  }
+  const res = await api.post('/pipeline/run-full-stack-pipeline', {
+    scenario_id: params?.scenarioId || 'scenario_earthquake_74',
+    user_request: params?.userRequest || 'Formulate optimal triage and rescue plan for Sector 7',
+  });
+  return res.data;
+};
+
+
