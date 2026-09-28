@@ -1,0 +1,64 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+.env
+.venv/
+venv/
+backend/venv/
+backend/.venv/
+ENV/
+
+# ML Models / Weights (too large for git)
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.h5
+backend/weights/
+
+# Data files
+data/
+*.npy
+*.npz
+*.ply
+*.pcd
+*.json.gz
+
+# 3D Reconstruction outputs
+/tmp/rescuetwin/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test outputs
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Jupyter
+.ipynb_checkpoints/

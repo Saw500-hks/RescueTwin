@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: rescuetwin-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - rescuetwin-data:/tmp/rescuetwin
+    environment:
+      - PYTHONUNBUFFERED=1
+      - TORCH_DEVICE=cpu
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    container_name: rescuetwin-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - VITE_API_URL=http://backend:8000
+    restart: unless-stopped
+
+volumes:
+  rescuetwin-data:
+    driver: local
