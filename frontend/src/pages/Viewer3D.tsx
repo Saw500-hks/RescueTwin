@@ -5,10 +5,11 @@ import { OrbitControls, Box, Grid } from '@react-three/drei';
 import {
   Maximize, RotateCcw, Info, Target, Eye, EyeOff,
   Layers, ArrowRight, ShieldAlert, Sparkles, Navigation,
-  Compass, Zap, Crosshair, CheckCircle2, AlertTriangle, Send, Loader2, Cpu
+  Compass, Zap, Crosshair, CheckCircle2, AlertTriangle, Send, Loader2, Cpu, ExternalLink
 } from 'lucide-react';
 import { DamageLevel } from '../types';
 import { executeAgentTool } from '../api/client';
+import { AiAssessmentModal } from '../components/AiAssessmentModal';
 import clsx from 'clsx';
 
 const damageColors: Record<string, string> = {
@@ -348,6 +349,7 @@ const Viewer3D = () => {
 
   const [dispatching, setDispatching] = useState<boolean>(false);
   const [dispatchSuccess, setDispatchSuccess] = useState<string | null>(null);
+  const [showAiAssessmentModal, setShowAiAssessmentModal] = useState<boolean>(false);
 
   const handleDispatchInspection = async (buildingId: string) => {
     setDispatching(true);
@@ -442,6 +444,7 @@ const Viewer3D = () => {
             { icon: showGrid ? Eye : EyeOff, title: showGrid ? 'Hide Grid' : 'Show Grid', onClick: () => setShowGrid(g => !g), active: showGrid },
             { icon: Navigation, title: showRoads ? 'Hide Roads' : 'Show Roads', onClick: () => setShowRoads(r => !r), active: showRoads },
             { icon: Cpu, title: showAiExplanation ? 'Hide AI Explanation' : 'Show AI Explanation', onClick: () => setShowAiExplanation(a => !a), active: showAiExplanation },
+            { icon: Sparkles, title: 'AI Assessment (Evidence)', onClick: () => setShowAiAssessmentModal(true), active: showAiAssessmentModal },
             { icon: Maximize, title: 'Fullscreen', onClick: handleToggleFullscreen, active: false },
           ].map(({ icon: Icon, title, onClick, active }, i) => (
             <button
@@ -628,6 +631,15 @@ const Viewer3D = () => {
               {/* Dispatch Action CTAs */}
               <div className="pt-2 space-y-2">
                 <button
+                  onClick={() => setShowAiAssessmentModal(true)}
+                  className="w-full py-2.5 text-xs font-bold text-white bg-gradient-to-r from-[#00E5FF]/20 to-[#0099FF]/20 hover:from-[#00E5FF]/30 hover:to-[#0099FF]/30 border border-[#00E5FF]/50 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_15px_rgba(0,229,255,0.2)]"
+                >
+                  <Cpu className="w-4 h-4 text-[#00E5FF]" />
+                  <span>Open AI Assessment (Evidence)</span>
+                  <ExternalLink className="w-3.5 h-3.5 text-[#00E5FF]" />
+                </button>
+
+                <button
                   onClick={() => handleDispatchInspection(selected.id)}
                   disabled={dispatching}
                   className="btn-primary w-full py-2.5 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(0,229,255,0.3)] disabled:opacity-50"
@@ -797,6 +809,13 @@ const Viewer3D = () => {
       <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
         <div className="scanline opacity-20" />
       </div>
+
+      {/* AI Assessment & Evidence Modal */}
+      <AiAssessmentModal
+        isOpen={showAiAssessmentModal}
+        onClose={() => setShowAiAssessmentModal(false)}
+        buildingId={selected?.id || 'B027'}
+      />
     </div>
   );
 };

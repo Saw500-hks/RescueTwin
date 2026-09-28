@@ -10,6 +10,7 @@ import {
   Search, RefreshCw
 } from 'lucide-react';
 import clsx from 'clsx';
+import { AiAssessmentModal } from '../components/AiAssessmentModal';
 
 const damageData = [
   { name: 'No Damage', count: 766, color: '#22C55E', pct: 61.4 },
@@ -254,6 +255,8 @@ const Analysis = () => {
   const [filterLevel, setFilterLevel] = useState<string>('ALL');
   const [mapMode, setMapMode] = useState<'pre' | 'post'>('post');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAiModal, setShowAiModal] = useState<boolean>(false);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<string>('B-027');
 
   const toggleSort = (col: string) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -634,13 +637,26 @@ const Analysis = () => {
                       {row.sector} ({row.lat}, {row.lon})
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); navigate('/viewer'); }}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00E5FF] hover:text-white transition-colors cursor-pointer"
-                      >
-                        <span>3D Twin</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedBuildingId(row.id);
+                            setShowAiModal(true);
+                          }}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#FF6B00] hover:text-white bg-[#FF6B00]/10 hover:bg-[#FF6B00]/25 border border-[#FF6B00]/30 hover:border-[#FF6B00]/60 px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-[0_0_10px_rgba(255,107,0,0.15)]"
+                        >
+                          <Sparkles className="w-3 h-3 text-[#FF6B00]" />
+                          <span>AI Assessment</span>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); navigate('/viewer'); }}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#00E5FF] hover:text-white bg-white/[0.04] hover:bg-[#00E5FF]/20 border border-white/[0.08] hover:border-[#00E5FF]/40 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+                        >
+                          <span>3D Twin</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -649,6 +665,13 @@ const Analysis = () => {
           </table>
         </div>
       </div>
+
+      {/* AI Assessment Modal with Evidence visualizers */}
+      <AiAssessmentModal
+        isOpen={showAiModal}
+        onClose={() => setShowAiModal(false)}
+        buildingId={selectedBuildingId}
+      />
     </div>
   );
 };
