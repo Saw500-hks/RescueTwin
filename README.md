@@ -85,6 +85,28 @@ Manual inspection is slow and dangerous. Satellite imagery lacks 3D context. **R
 
 ---
 
+## 👁️ Computer Vision & Geospatial Pipeline
+
+```text
+Input images
+   ↓
+Building detection
+   ↓
+Pre/post alignment
+   ↓
+Damage classification
+   ↓
+Road/access analysis
+```
+
+1. **Input images:** Dual-pass optical (WorldView-3, Sentinel-2) and SAR satellite imagery or drone orthomosaics with radiometric calibration and GeoTIFF header validation.
+2. **Building detection:** Deep learning segmentation via **YOLOv8x** isolating structural footprints, contour polygons, and bounding boxes.
+3. **Pre/post alignment:** Sub-pixel co-registration using **ORB/SIFT feature extraction + RANSAC homography estimation** and perspective warp matrix correction.
+4. **Damage classification:** Deep feature comparison with **SiameseDamageNet** (ResNet-18 dual encoder) & debris density estimation to classify damage severity (`NO_DAMAGE`, `MINOR`, `MAJOR`, `DESTROYED`), including prioritized verification of targets such as **Building B-027** (`MAJOR`, `0.91 confidence`).
+5. **Road/access analysis:** Arterial corridor intersection with structural debris fields, assessing passable vs. restricted vs. blocked routes, clearing equipment requirements (front-loader, excavator), and calculating emergency ingress corridors.
+
+---
+
 ## 🤖 Cognitive Core: Nebius Token Factory · NVIDIA Nemotron
 
 RescueTwin utilizes **NVIDIA Nemotron** (via **Nebius Token Factory** and **NVIDIA NIM**) as the cognitive intelligence layer of the autonomous disaster coordinator:

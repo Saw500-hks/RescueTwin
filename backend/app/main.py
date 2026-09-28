@@ -8,7 +8,7 @@ import uvicorn
 from contextlib import asynccontextmanager
 from typing import Dict
 
-from app.routers import detection, damage, reconstruction, priority, agent
+from app.routers import detection, damage, reconstruction, priority, agent, pipeline
 
 UPLOAD_DIR = "/tmp/rescuetwin/uploads"
 RESULT_DIR = "/tmp/rescuetwin/results"
@@ -70,6 +70,7 @@ app.include_router(damage.router, prefix="/api/v1", tags=["Damage"])
 app.include_router(reconstruction.router, prefix="/api/v1", tags=["Reconstruction"])
 app.include_router(priority.router, prefix="/api/v1", tags=["Priority"])
 app.include_router(agent.router, prefix="/api/v1", tags=["NVIDIA Nemotron Agent"])
+app.include_router(pipeline.router, prefix="/api/v1", tags=["CV & Geospatial Pipeline"])
 
 
 @app.get("/health")

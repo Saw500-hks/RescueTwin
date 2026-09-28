@@ -93,3 +93,20 @@ export const executeAgentTool = async (toolName: string, payload: Record<string,
   return res.data;
 };
 
+// ==========================================
+// 5-STEP COMPUTER VISION & GEOSPATIAL PIPELINE
+// ==========================================
+
+export const getPipelineStages = async () => {
+  const res = await api.get('/pipeline/stages');
+  return res.data;
+};
+
+export const runCVPipeline = async (preFile?: File | null, postFile?: File | null) => {
+  const formData = new FormData();
+  if (preFile) formData.append('pre', preFile);
+  if (postFile) formData.append('post', postFile);
+  const res = await api.post('/pipeline/run-cv-pipeline', formData);
+  return res.data;
+};
+

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 
 class DamageLevel(str, Enum):
     NO_DAMAGE = "NO_DAMAGE"
@@ -43,3 +43,13 @@ class ReconstructionResult(BaseModel):
     colored_map_path: str
     building_count: int
     damage_summary: Dict[str, int]
+
+class CVPipelineExecutionResponse(BaseModel):
+    job_id: str
+    status: str
+    step_1_input_images: Dict[str, Any]
+    step_2_building_detection: Dict[str, Any]
+    step_3_pre_post_alignment: Dict[str, Any]
+    step_4_damage_classification: Dict[str, Any]
+    step_5_road_access_analysis: Dict[str, Any]
+    pipeline_summary: str

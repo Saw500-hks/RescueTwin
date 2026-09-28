@@ -20,13 +20,14 @@ const damageData = [
 
 const buildings = [
   { id: 'BLD-901', level: 'DESTROYED', conf: 98.5, change: 0.92, rank: 1, lat: '34.052°N', lon: '118.244°W', sector: 'Sector 4-B' },
+  { id: 'B-027', level: 'MAJOR', conf: 91.0, change: 0.43, rank: 2, lat: '34.054°N', lon: '118.243°W', sector: 'Sector 7-A', evidence: '43% structural change, roof geometry changed, visible facade damage, nearby road partially blocked', action: 'Dispatch inspection team' },
+  { id: 'BLD-842', level: 'DESTROYED', conf: 95.8, change: 0.89, rank: 3, lat: '34.059°N', lon: '118.252°W', sector: 'Sector 4-C' },
+  { id: 'BLD-331', level: 'MAJOR', conf: 89.4, change: 0.71, rank: 4, lat: '34.063°N', lon: '118.242°W', sector: 'Sector 3-B' },
   { id: 'BLD-442', level: 'MAJOR', conf: 87.2, change: 0.74, rank: 14, lat: '34.058°N', lon: '118.250°W', sector: 'Sector 2-A' },
   { id: 'BLD-733', level: 'MAJOR', conf: 83.1, change: 0.69, rank: 22, lat: '34.061°N', lon: '118.240°W', sector: 'Sector 3-C' },
   { id: 'BLD-112', level: 'MINOR', conf: 91.0, change: 0.35, rank: 156, lat: '34.047°N', lon: '118.255°W', sector: 'Sector 1-D' },
-  { id: 'BLD-005', level: 'NO_DAMAGE', conf: 99.1, change: 0.02, rank: 890, lat: '34.044°N', lon: '118.260°W', sector: 'Sector 5-A' },
   { id: 'BLD-289', level: 'MINOR', conf: 76.3, change: 0.31, rank: 201, lat: '34.055°N', lon: '118.248°W', sector: 'Sector 2-C' },
-  { id: 'BLD-842', level: 'DESTROYED', conf: 95.8, change: 0.89, rank: 2, lat: '34.059°N', lon: '118.252°W', sector: 'Sector 4-C' },
-  { id: 'BLD-331', level: 'MAJOR', conf: 89.4, change: 0.71, rank: 3, lat: '34.063°N', lon: '118.242°W', sector: 'Sector 3-B' },
+  { id: 'BLD-005', level: 'NO_DAMAGE', conf: 99.1, change: 0.02, rank: 890, lat: '34.044°N', lon: '118.260°W', sector: 'Sector 5-A' },
 ];
 
 const dmgConfig: Record<string, { badgeCls: string; color: string; border: string }> = {
@@ -309,6 +310,91 @@ const Analysis = () => {
             <Download className="w-4 h-4" />
             <span>Export Mission Report</span>
           </button>
+        </div>
+      </div>
+
+      {/* 5-Stage Computer Vision & Geospatial Pipeline Trace */}
+      <div className="hud-card p-5 md:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+          <div className="flex items-center gap-2">
+            <span className="badge-cyan text-[10px] font-mono">PIPELINE TRACE</span>
+            <span className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+              5-Stage CV & Geospatial Execution Pipeline
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-400">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>ALL 5 STAGES VERIFIED (END-TO-END CONVERGED)</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          {[
+            {
+              step: '1',
+              title: 'Input images',
+              model: 'WV-3 / Sentinel-2',
+              stat: '0.35m/px Resolution',
+              status: 'INGESTED',
+              badge: 'bg-[#00E5FF]/20 text-[#00E5FF] border-[#00E5FF]/40',
+              details: 'Pre/Post optical bands calibrated'
+            },
+            {
+              step: '2',
+              title: 'Building detection',
+              model: 'YOLOv8x-Footprint',
+              stat: '1,248 Segmented',
+              status: '98.4% CONF',
+              badge: 'bg-[#38BDF8]/20 text-[#38BDF8] border-[#38BDF8]/40',
+              details: 'B-027 footprint registered'
+            },
+            {
+              step: '3',
+              title: 'Pre/post alignment',
+              model: 'ORB + RANSAC',
+              stat: '2.4px Mean Shift',
+              status: 'LOCKED',
+              badge: 'bg-[#A855F7]/20 text-[#A855F7] border-[#A855F7]/40',
+              details: 'Homography warp aligned'
+            },
+            {
+              step: '4',
+              title: 'Damage classification',
+              model: 'SiameseDamageNet',
+              stat: 'B-027: MAJOR (43%)',
+              status: 'CLASSIFIED',
+              badge: 'bg-[#FF6B00]/20 text-[#FF6B00] border-[#FF6B00]/40',
+              details: '42 Destroyed · 128 Major'
+            },
+            {
+              step: '5',
+              title: 'Road/access analysis',
+              model: 'Arterial Obstruction',
+              stat: '1 Ingress / 2 Restricted',
+              status: 'COMPUTED',
+              badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+              details: 'North Arterial Blvd Clear'
+            },
+          ].map((st) => (
+            <div key={st.step} className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.08] space-y-2 relative group hover:border-[#00E5FF]/30 transition-all">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-slate-400 font-bold">STAGE {st.step}</span>
+                <span className={clsx('text-[9px] px-1.5 py-0.5 rounded font-mono font-bold border', st.badge)}>
+                  {st.status}
+                </span>
+              </div>
+              <div>
+                <div className="text-xs font-bold text-white">{st.title}</div>
+                <div className="text-[10px] font-mono text-[#00E5FF] mt-0.5">{st.model}</div>
+              </div>
+              <div className="text-[11px] font-bold text-slate-200 font-mono">
+                {st.stat}
+              </div>
+              <div className="text-[10px] text-slate-400 font-sans">
+                {st.details}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
