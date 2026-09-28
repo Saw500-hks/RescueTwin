@@ -6,6 +6,8 @@ import {
   Marker,
   Popup,
   Circle,
+  Polygon,
+  Tooltip,
   useMap,
   useMapEvents,
 } from 'react-leaflet';
@@ -240,18 +242,42 @@ const TILE_LAYERS = {
   },
 };
 
-// Map FlyTo Helper Component
+// Generates a realistic polygon footprint around the coordinate
+const getBuildingFootprint = (lat: number, lng: number, id: string = '') => {
+  const charCode = id.charCodeAt(id.length - 1) || 1;
+  const dLat = 0.00014 + (charCode % 4) * 0.00003;
+  const dLng = 0.00018 + (charCode % 5) * 0.00003;
+  return [
+    [lat - dLat, lng - dLng],
+    [lat + dLat, lng - dLng],
+    [lat + dLat, lng + dLng],
+    [lat - dLat, lng + dLng],
+  ] as [number, number][];
+};
+
+// Map FlyTo Helper Component with dynamic zoom sync
 function MapController({
   center,
   zoom,
+  onZoomChange,
 }: {
   center: [number, number];
   zoom: number;
+  onZoomChange?: (z: number) => void;
 }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, zoom, { duration: 1.4 });
+    map.flyTo(center, zoom, { duration: 1.2, easeLinearity: 0.25 });
   }, [center, zoom, map]);
+
+  useMapEvents({
+    zoomend() {
+      if (onZoomChange) {
+        onZoomChange(Math.round(map.getZoom()));
+      }
+    },
+  });
+
   return null;
 }
 
@@ -621,10 +647,12 @@ const GeoMap = () => {
 
       {/* ── Main Workspace: Map Canvas + Floating Sidebars ── */}
       <div className="relative flex-1 w-full h-full">
-        {/* Leaflet Map Container */}
+        {/* Leaflet Map Container with Zoom up to 20 for rooftop resolution */}
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
+          minZoom={3}
+          maxZoom={20}
           scrollWheelZoom={true}
           className="w-full h-full z-0"
           style={{ height: '100%', width: '100%' }}
@@ -632,14 +660,17 @@ const GeoMap = () => {
           <TileLayer
             url={TILE_LAYERS[tileStyle].url}
             attribution={TILE_LAYERS[tileStyle].attribution}
+            maxZoom={20}
+            maxNativeZoom={19}
           />
-          <MapController center={mapCenter} zoom={mapZoom} />
+          <MapController center={mapCenter} zoom={mapZoom} onZoomChange={setMapZoom} />
           <MapClickHandler onMapClick={handleMapClick} isAddMode={isAddMode} />
 
-          {/* Render All Disaster Sites & Markers */}
+          {/* Render All Disaster Sites, Building Footprints & Markers */}
           {filteredSites.map((site) => {
             const isSelected = selectedSite?.id === site.id;
             const markerColor = damageColorMap[site.damage];
+            const footprint = getBuildingFootprint(site.lat, site.lng, site.id);
 
             return (
               <React.Fragment key={site.id}>
@@ -658,16 +689,49 @@ const GeoMap = () => {
                   />
                 )}
 
+                {/* Building Footprint Polygon (Visible at Close Zoom >= 16 or when selected) */}
+                {(mapZoom >= 16 || isSelected) && (
+                  <Polygon
+                    positions={footprint}
+                    pathOptions={{
+                      color: markerColor,
+                      weight: isSelected ? 3 : 1.5,
+                      fillColor: markerColor,
+                      fillOpacity: isSelected ? 0.45 : 0.2,
+                      dashArray: isSelected ? undefined : '3, 4',
+                    }}
+                    eventHandlers={{
+                      click: () => {
+                        setSelectedSite(site);
+                        setMapCenter([site.lat, site.lng]);
+                        setMapZoom(19);
+                        setTileStyle('satellite');
+                      },
+                    }}
+                  >
+                    <Tooltip direction="top" offset={[0, -12]} opacity={0.95} permanent={isSelected && mapZoom >= 18}>
+                      <div className="text-[11px] font-mono font-bold text-white bg-black/90 px-2 py-0.5 rounded border border-white/20">
+                        {site.name} · {site.damage}
+                      </div>
+                    </Tooltip>
+                  </Polygon>
+                )}
+
                 {/* Tactical Marker */}
                 <Marker
                   position={[site.lat, site.lng]}
                   icon={createTacticalIcon(site.damage, isSelected)}
                   eventHandlers={{
-                    click: () => setSelectedSite(site),
+                    click: () => {
+                      setSelectedSite(site);
+                      setMapCenter([site.lat, site.lng]);
+                      setMapZoom(19);
+                      setTileStyle('satellite');
+                    },
                   }}
                 >
                   <Popup className="tactical-leaflet-popup">
-                    <div className="p-3.5 w-[260px] text-white">
+                    <div className="p-3.5 w-[270px] text-white">
                       {/* Popup Header */}
                       <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-white/[0.08]">
                         <span className="text-[12px] font-mono font-bold text-white truncate">
@@ -714,21 +778,33 @@ const GeoMap = () => {
                         {site.notes}
                       </p>
 
-                      {/* Popup Action */}
-                      <div className="flex gap-2">
+                      {/* Popup Actions */}
+                      <div className="flex flex-col gap-1.5">
                         <button
-                          onClick={() => navigate('/viewer')}
-                          className="btn-primary flex-1 py-1.5 text-[11px] justify-center flex items-center gap-1.5 cursor-pointer"
+                          onClick={() => {
+                            setMapCenter([site.lat, site.lng]);
+                            setMapZoom(19);
+                            setTileStyle('satellite');
+                          }}
+                          className="w-full py-1.5 px-2.5 rounded bg-gradient-to-r from-[#00E5FF]/20 to-[#0088FF]/20 border border-[#00E5FF]/40 text-[#00E5FF] hover:bg-[#00E5FF]/30 text-[11px] font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <Box className="w-3 h-3" /> 3D Twin
+                          <Eye className="w-3.5 h-3.5" /> 🛰️ Direct Satellite Close-Up
                         </button>
-                        <button
-                          onClick={() => navigate('/priority')}
-                          className="btn-secondary py-1.5 px-2.5 text-[11px] flex items-center justify-center cursor-pointer"
-                          title="View in Rescue Priority Plan"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => navigate('/viewer')}
+                            className="btn-primary flex-1 py-1.5 text-[11px] justify-center flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Box className="w-3 h-3" /> 3D Twin
+                          </button>
+                          <button
+                            onClick={() => navigate('/priority')}
+                            className="btn-secondary py-1.5 px-2.5 text-[11px] flex items-center justify-center cursor-pointer"
+                            title="View in Rescue Priority Plan"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </Popup>
@@ -832,7 +908,8 @@ const GeoMap = () => {
                     onClick={() => {
                       setSelectedSite(site);
                       setMapCenter([site.lat, site.lng]);
-                      setMapZoom(14);
+                      setMapZoom(19);
+                      setTileStyle('satellite');
                     }}
                     className={clsx(
                       'p-2.5 rounded-lg transition-all cursor-pointer border group',
@@ -852,9 +929,14 @@ const GeoMap = () => {
 
                     <div className="flex items-center justify-between text-[10px] text-[#6B7280]">
                       <span>{site.district}</span>
-                      <span className={site.roadAccess ? 'text-[#22C55E]' : 'text-[#EF4444]'}>
-                        {site.roadAccess ? 'Road Clear' : 'Road Blocked'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={site.roadAccess ? 'text-[#22C55E]' : 'text-[#EF4444]'}>
+                          {site.roadAccess ? 'Road Clear' : 'Road Blocked'}
+                        </span>
+                        <span className="text-[#00E5FF] font-semibold flex items-center gap-0.5 group-hover:underline">
+                          <Eye className="w-2.5 h-2.5" /> 19x
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -930,6 +1012,32 @@ const GeoMap = () => {
               <div className="p-2.5 rounded-lg bg-black/40 border border-white/[0.05] text-[11px] text-[#9CA3AF]">
                 <span className="text-[9px] uppercase tracking-wider text-[#6B7280] font-semibold block mb-0.5">Field Report</span>
                 {selectedSite.notes}
+              </div>
+
+              {/* Direct Close-Up Satellite Inspection Button */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setMapCenter([selectedSite.lat, selectedSite.lng]);
+                    setMapZoom(19);
+                    setTileStyle('satellite');
+                  }}
+                  className="flex-1 py-2 px-3 text-[12px] font-bold rounded-lg border border-[#00E5FF]/50 bg-gradient-to-r from-[#00E5FF]/20 to-[#0088FF]/20 text-[#00E5FF] hover:bg-[#00E5FF]/35 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(0,229,255,0.2)]"
+                  title="Direct zoom to building rooftop and footprint on satellite map"
+                >
+                  <Eye className="w-4 h-4" /> 🛰️ Direct Building Zoom (19x)
+                </button>
+                {mapZoom >= 18 && (
+                  <button
+                    onClick={() => {
+                      setMapZoom(14);
+                    }}
+                    className="py-2 px-2.5 text-[11px] rounded-lg border border-white/10 bg-black/40 text-slate-400 hover:text-white transition-all cursor-pointer"
+                    title="Zoom back out to neighborhood level"
+                  >
+                    Area View (14x)
+                  </button>
+                )}
               </div>
 
               {/* Actions */}

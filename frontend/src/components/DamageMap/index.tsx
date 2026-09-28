@@ -11,13 +11,13 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  MapContainer, TileLayer, Marker, Popup, Circle, useMap,
+  MapContainer, TileLayer, Marker, Popup, Circle, Polygon, Tooltip, useMap, useMapEvents,
 } from 'react-leaflet';
 import L from 'leaflet';
 import {
   ChevronRight, AlertTriangle, Info, Layers, Filter,
   Building2, MapPin, Droplets, Wind, Mountain, Activity, Flame,
-  X, ExternalLink, Loader2, ShieldAlert, CheckCircle2,
+  X, ExternalLink, Loader2, ShieldAlert, CheckCircle2, Eye,
 } from 'lucide-react';
 import clsx from 'clsx';
 import {
@@ -50,10 +50,27 @@ interface Building {
   data_status: string; road_status: string; road_status_note: string;
 }
 
-// ── Map Controller ─────────────────────────────────────────────────────────────
-function MapFlyTo({ center, zoom }: { center: [number, number]; zoom: number }) {
+// ── Map Controller & Footprint Helper ──────────────────────────────────────────
+const getBuildingFootprint = (lat: number, lng: number, id: string = '') => {
+  const charCode = id.charCodeAt(id.length - 1) || 1;
+  const dLat = 0.00015 + (charCode % 4) * 0.00003;
+  const dLng = 0.00018 + (charCode % 5) * 0.00003;
+  return [
+    [lat - dLat, lng - dLng],
+    [lat + dLat, lng - dLng],
+    [lat + dLat, lng + dLng],
+    [lat - dLat, lng + dLng],
+  ] as [number, number][];
+};
+
+function MapFlyTo({ center, zoom, onZoomChange }: { center: [number, number]; zoom: number; onZoomChange?: (z: number) => void }) {
   const map = useMap();
-  useEffect(() => { map.flyTo(center, zoom, { duration: 1.3 }); }, [center, zoom, map]);
+  useEffect(() => { map.flyTo(center, zoom, { duration: 1.2, easeLinearity: 0.25 }); }, [center, zoom, map]);
+  useMapEvents({
+    zoomend() {
+      if (onZoomChange) onZoomChange(Math.round(map.getZoom()));
+    }
+  });
   return null;
 }
 
@@ -199,9 +216,12 @@ const DamageMap: React.FC = () => {
     setLoading(false);
   }, []);
 
-  // Select building → AI explain
+  // Select building → center map, zoom to building, switch to satellite, and AI explain
   const handleSelectBuilding = useCallback(async (building: Building) => {
     setSelectedBuilding(building);
+    setMapCenter([building.lat, building.lng]);
+    setMapZoom(19);
+    setTileStyle('satellite');
     setAiLoading(true);
     setAiOutput(null);
     try {
@@ -445,11 +465,18 @@ const DamageMap: React.FC = () => {
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
+          minZoom={3}
+          maxZoom={20}
           style={{ height: '100%', width: '100%' }}
           className="z-0"
         >
-          <MapFlyTo center={mapCenter} zoom={mapZoom} />
-          <TileLayer url={TILE_URLS[tileStyle]} attribution="&copy; CartoDB" />
+          <MapFlyTo center={mapCenter} zoom={mapZoom} onZoomChange={setMapZoom} />
+          <TileLayer
+            url={TILE_URLS[tileStyle]}
+            attribution="&copy; CartoDB, &copy; Esri"
+            maxZoom={20}
+            maxNativeZoom={19}
+          />
 
           {/* Disaster event heat zone */}
           {selectedEvent && showHeatZone && (
@@ -466,29 +493,70 @@ const DamageMap: React.FC = () => {
             />
           )}
 
-          {/* Building markers */}
-          {buildings.map((b) => (
-            <Marker
-              key={b.building_id}
-              position={[b.lat, b.lng]}
-              icon={createBuildingIcon(b.inspection_priority, selectedBuilding?.building_id === b.building_id)}
-              eventHandlers={{ click: () => handleSelectBuilding(b) }}
-            >
-              <Popup>
-                <div className="p-2 min-w-[200px]" style={{ color: '#e2e8f0', background: 'transparent' }}>
-                  <div className="font-bold text-sm mb-1">{b.name}</div>
-                  <div className="text-xs text-slate-400 mb-1">{b.building_id}</div>
-                  <DataStatusBadge status={b.data_status} />
-                  <div className="mt-2 text-xs">
-                    <div>Flood Exposure: <span className="text-blue-400">{b.flood_exposure}</span></div>
-                    <div>Damage: <span className="text-amber-400">{b.damage_classification}</span></div>
-                    <div>Priority: <span className="text-orange-400">{b.inspection_priority.replace(/_/g, ' ')}</span></div>
-                  </div>
-                  <div className="mt-1.5 text-[10px] text-slate-500 italic">{b.damage_note}</div>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
+          {/* Building footprints and markers */}
+          {buildings.map((b) => {
+            const isSelected = selectedBuilding?.building_id === b.building_id;
+            const color = inspectionColor(b.inspection_priority);
+            const footprint = getBuildingFootprint(b.lat, b.lng, b.building_id);
+
+            return (
+              <React.Fragment key={b.building_id}>
+                {/* Building Footprint Polygon (Visible at Close Zoom >= 16 or when selected) */}
+                {(mapZoom >= 16 || isSelected) && (
+                  <Polygon
+                    positions={footprint}
+                    pathOptions={{
+                      color: color,
+                      weight: isSelected ? 3 : 1.5,
+                      fillColor: color,
+                      fillOpacity: isSelected ? 0.45 : 0.25,
+                      dashArray: isSelected ? undefined : '3, 4',
+                    }}
+                    eventHandlers={{
+                      click: () => handleSelectBuilding(b),
+                    }}
+                  >
+                    <Tooltip direction="top" offset={[0, -10]} opacity={0.95} permanent={isSelected && mapZoom >= 18}>
+                      <div className="text-[10px] font-mono font-bold text-white bg-black/90 px-1.5 py-0.5 rounded border border-white/20">
+                        {b.name}
+                      </div>
+                    </Tooltip>
+                  </Polygon>
+                )}
+
+                <Marker
+                  position={[b.lat, b.lng]}
+                  icon={createBuildingIcon(b.inspection_priority, isSelected)}
+                  eventHandlers={{ click: () => handleSelectBuilding(b) }}
+                >
+                  <Popup>
+                    <div className="p-2 min-w-[210px]" style={{ color: '#e2e8f0', background: 'transparent' }}>
+                      <div className="font-bold text-sm mb-1">{b.name}</div>
+                      <div className="text-xs text-slate-400 mb-1">{b.building_id}</div>
+                      <DataStatusBadge status={b.data_status} />
+                      <div className="mt-2 text-xs">
+                        <div>Flood Exposure: <span className="text-blue-400">{b.flood_exposure}</span></div>
+                        <div>Damage: <span className="text-amber-400">{b.damage_classification}</span></div>
+                        <div>Priority: <span className="text-orange-400">{b.inspection_priority.replace(/_/g, ' ')}</span></div>
+                      </div>
+                      <div className="mt-1.5 text-[10px] text-slate-500 italic">{b.damage_note}</div>
+
+                      <button
+                        onClick={() => {
+                          setMapCenter([b.lat, b.lng]);
+                          setMapZoom(19);
+                          setTileStyle('satellite');
+                        }}
+                        className="mt-2 w-full py-1 text-[11px] font-bold rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 flex items-center justify-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" /> 🛰️ Satellite Close-Up (19x)
+                      </button>
+                    </div>
+                  </Popup>
+                </Marker>
+              </React.Fragment>
+            );
+          })}
         </MapContainer>
 
         {/* Tile layer controls */}
@@ -545,6 +613,30 @@ const DamageMap: React.FC = () => {
               <div className="font-bold text-slate-100 text-sm mb-0.5">{selectedBuilding.name}</div>
               <div className="text-[10px] text-slate-500 font-mono mb-1.5">{selectedBuilding.building_id}</div>
               <DataStatusBadge status={selectedBuilding.data_status} />
+            </div>
+
+            {/* Direct Close-Up Satellite Button */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setMapCenter([selectedBuilding.lat, selectedBuilding.lng]);
+                  setMapZoom(19);
+                  setTileStyle('satellite');
+                }}
+                className="flex-1 py-1.5 px-2 rounded-lg bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/30 text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                title="Direct zoom into building rooftop and footprint on satellite imagery"
+              >
+                <Eye className="w-3.5 h-3.5" /> 🛰️ Satellite Close-Up (19x)
+              </button>
+              {mapZoom >= 18 && (
+                <button
+                  onClick={() => setMapZoom(12)}
+                  className="py-1.5 px-2 rounded-lg border border-white/10 bg-black/40 text-slate-400 hover:text-white text-[10px] cursor-pointer"
+                  title="Zoom back out to district/event overview"
+                >
+                  Area (12x)
+                </button>
+              )}
             </div>
 
             {/* Field Grid */}
