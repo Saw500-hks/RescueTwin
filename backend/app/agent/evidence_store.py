@@ -187,9 +187,121 @@ class EvidenceStore:
                 hazards=[],
                 aftershock_collapse_risk=0.05,
                 status="SAFE_SHELTER_CANDIDATE"
+            ),
+            EvidenceItem(
+                id="EVD-014",
+                building_id="B014",
+                name="Sector 4 West Commercial Warehouse",
+                damage_level="DESTROYED",
+                confidence=0.96,
+                lat=34.0528,
+                lng=-118.2418,
+                elevation_m=17.5,
+                area_sqm=620.0,
+                building_area=620.0,
+                damage_score=0.96,
+                estimated_victims=7,
+                victim_confidence=0.92,
+                debris_density=0.88,
+                road_access=False,
+                road_access_ratio=0.45,
+                road_blockage_pct=55.0,
+                change_score=0.88,
+                hazards=[
+                    "88% structural change",
+                    "Complete roof collapse & structural pancake",
+                    "Heavy structural rubble spilling into ingress lane"
+                ],
+                structural_change_pct=88.0,
+                evidence=[
+                    "pre_post_difference",
+                    "roof_collapse",
+                    "perimeter_rubble"
+                ],
+                priority="HIGH",
+                recommended_action="Dispatch heavy USAR & extrication team",
+                reason="Severe structural collapse + life safety hazard",
+                aftershock_collapse_risk=0.95,
+                status="CRITICAL_LIFE_SAFETY"
+            ),
+            EvidenceItem(
+                id="EVD-031",
+                building_id="B031",
+                name="Central Logistics Office Building",
+                damage_level="MAJOR",
+                confidence=0.88,
+                lat=34.0560,
+                lng=-118.2465,
+                elevation_m=22.0,
+                area_sqm=510.0,
+                building_area=510.0,
+                damage_score=0.84,
+                estimated_victims=4,
+                victim_confidence=0.85,
+                debris_density=0.55,
+                road_access=True,
+                road_access_ratio=0.52,
+                road_blockage_pct=48.0,
+                change_score=0.65,
+                hazards=[
+                    "65% structural change",
+                    "Severe facade shearing & vertical tilt detected",
+                    "Single lane restricted by fallen parapet masonry"
+                ],
+                structural_change_pct=65.0,
+                evidence=[
+                    "facade_shearing",
+                    "masonry_debris",
+                    "tilt_anomaly"
+                ],
+                priority="HIGH",
+                recommended_action="Dispatch shoring and stabilization crew",
+                reason="High structural shear risk requiring immediate shoring",
+                aftershock_collapse_risk=0.78,
+                status="PENDING_STABILIZATION"
+            ),
+            EvidenceItem(
+                id="EVD-009",
+                building_id="B009",
+                name="North District Municipal Annex",
+                damage_level="MINOR",
+                confidence=0.82,
+                lat=34.0485,
+                lng=-118.2440,
+                elevation_m=15.0,
+                area_sqm=380.0,
+                building_area=380.0,
+                damage_score=0.42,
+                estimated_victims=0,
+                victim_confidence=0.20,
+                debris_density=0.22,
+                road_access=True,
+                road_access_ratio=0.85,
+                road_blockage_pct=15.0,
+                change_score=0.28,
+                hazards=[
+                    "28% structural change",
+                    "Non-structural window and cladding displacement",
+                    "Road accessible with minor pavement cracking"
+                ],
+                structural_change_pct=28.0,
+                evidence=[
+                    "minor_facade_cracking",
+                    "clear_ingress"
+                ],
+                priority="MODERATE",
+                recommended_action="Field survey and secondary assessment",
+                reason="Minor structural risk; corridor clear for transit",
+                aftershock_collapse_risk=0.25,
+                status="MONITORED"
             )
         ]
         self._evidence[scen1_id] = {b.building_id: b for b in bldgs1}
+        # Alias B027, B014, B031, B009 with hyphenated versions
+        for bid in ["B027", "B014", "B031", "B009"]:
+            if bid in self._evidence[scen1_id]:
+                hyphen_id = f"{bid[:1]}-{bid[1:]}"
+                self._evidence[scen1_id][hyphen_id] = self._evidence[scen1_id][bid]
         if "B-027" in self._evidence[scen1_id]:
             self._evidence[scen1_id]["B027"] = self._evidence[scen1_id]["B-027"]
 

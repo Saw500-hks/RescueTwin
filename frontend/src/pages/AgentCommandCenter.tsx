@@ -14,6 +14,7 @@ import {
   DisasterScenario, EvidenceItem, AgentThought,
   ToolCallRecord, ActionableRescuePlan, AgentRunResponse
 } from '../types';
+import RescueTwinCommandCenter from '../components/RescueTwinCommandCenter';
 
 // The 8 architecture nodes specified by the user
 const PIPELINE_STAGES = [
@@ -167,6 +168,11 @@ const AgentCommandCenter: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ========================================================
+          RESCUETWIN AI COMMAND CENTER (PRIORITY | 3D TWIN | AGENT REASONING)
+         ======================================================== */}
+      <RescueTwinCommandCenter />
 
       {/* ========================================================
           VISUAL ARCHITECTURE PIPELINE FLOW (MATCHING SPEC)
