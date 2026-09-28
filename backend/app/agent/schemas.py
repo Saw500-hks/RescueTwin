@@ -57,11 +57,11 @@ class DisasterScenario(BaseModel):
     center_lat: float
     center_lng: float
     timestamp: str
-    total_structures: int
-    critical_structures: int
-    estimated_trapped: int
+    total_structures: Optional[int] = None    # UNAVAILABLE when no survey data
+    critical_structures: Optional[int] = None  # UNAVAILABLE when no survey data
+    estimated_trapped: Optional[int] = None    # UNAVAILABLE when no field data
     weather_condition: str
-    golden_window_hours_left: float
+    golden_window_hours_left: Optional[float] = None
     description: str
 
 class ToolCallRecord(BaseModel):

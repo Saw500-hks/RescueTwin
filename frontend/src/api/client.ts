@@ -152,4 +152,88 @@ export const runFullStackPipeline = async (params?: {
   return res.data;
 };
 
+// ==========================================
+// PAN-INDIA GEOGRAPHIC & DISASTER API
+// ==========================================
 
+export const getRegions = async () => {
+  const res = await api.get('/geo/regions');
+  return res.data;
+};
+
+export const getStates = async () => {
+  const res = await api.get('/geo/states');
+  return res.data;
+};
+
+export const getStateDistricts = async (stateId: string) => {
+  const res = await api.get(`/geo/states/${stateId}/districts`);
+  return res.data;
+};
+
+export const getDisasterTypes = async () => {
+  const res = await api.get('/geo/disaster-types');
+  return res.data;
+};
+
+export const getDisasters = async (stateId?: string, disasterType?: string) => {
+  const params = new URLSearchParams();
+  if (stateId) params.append('state_id', stateId);
+  if (disasterType) params.append('disaster_type', disasterType);
+  const qs = params.toString();
+  const res = await api.get(`/geo/disasters${qs ? '?' + qs : ''}`);
+  return res.data;
+};
+
+export const getDisasterEvent = async (eventId: string) => {
+  const res = await api.get(`/geo/disasters/${eventId}`);
+  return res.data;
+};
+
+export const getDisasterBuildings = async (eventId: string) => {
+  const res = await api.get(`/geo/disasters/${eventId}/buildings`);
+  return res.data;
+};
+
+export const getBuildingDetail = async (buildingId: string) => {
+  const res = await api.get(`/geo/buildings/${buildingId}`);
+  return res.data;
+};
+
+export const getBuildingEvidence = async (buildingId: string) => {
+  const res = await api.get(`/geo/buildings/${buildingId}/evidence`);
+  return res.data;
+};
+
+// ==========================================
+// AI DECISION SUPPORT API
+// ==========================================
+
+export const aiExplain = async (params: {
+  building_id?: string;
+  event_id?: string;
+  scenario_id?: string;
+  question?: string;
+  available_data?: Record<string, any>;
+}) => {
+  const res = await api.post('/ai/explain', params);
+  return res.data;
+};
+
+export const aiPrioritize = async (params: {
+  event_id?: string;
+  scenario_id?: string;
+  buildings?: any[];
+}) => {
+  const res = await api.post('/ai/prioritize', params);
+  return res.data;
+};
+
+export const aiAnalyze = async (params: {
+  event_id?: string;
+  scenario_id?: string;
+  context?: string;
+}) => {
+  const res = await api.post('/ai/analyze', params);
+  return res.data;
+};

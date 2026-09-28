@@ -2,13 +2,14 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, UploadCloud, BarChart2, Box, AlertTriangle,
-  Building2, ShieldAlert, Activity, Map, FileDown, Layers, Target, Compass, Cpu
+  Building2, ShieldAlert, Activity, Map, FileDown, Layers, Target, Compass, Cpu, Globe
 } from 'lucide-react';
 import useStore from '../../stores/useStore';
 import clsx from 'clsx';
 
 const navItems = [
   { to: '/', label: 'Home', icon: LayoutDashboard, end: true },
+  { to: '/india', label: 'India Command', icon: Globe, badge: 'NEW' },
   { to: '/agent', label: 'AI Commander', icon: Cpu, badge: 'Nemotron' },
   { to: '/map', label: 'Live Map', icon: Map },
   { to: '/upload', label: 'Analysis', icon: UploadCloud },
@@ -71,7 +72,12 @@ const Sidebar = () => {
                 />
                 <span>{item.label}</span>
                 {item.badge && (
-                  <span className="ml-1.5 px-1.5 py-0.2 rounded text-[8px] font-mono font-extrabold uppercase tracking-wider bg-[#76B900]/20 text-[#76B900] border border-[#76B900]/30">
+                  <span className={clsx(
+                    'ml-1.5 px-1.5 py-0.2 rounded text-[8px] font-mono font-extrabold uppercase tracking-wider border',
+                    item.badge === 'NEW'
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                      : 'bg-[#76B900]/20 text-[#76B900] border-[#76B900]/30'
+                  )}>
                     {item.badge}
                   </span>
                 )}

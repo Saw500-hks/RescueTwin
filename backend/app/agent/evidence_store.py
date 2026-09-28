@@ -364,6 +364,119 @@ class EvidenceStore:
         ]
         self._evidence[scen2_id] = {b.building_id: b for b in bldgs2}
 
+        # ── Scenario 3: Bihar/Patna Flood — Pan-India Demo ────────────────────
+        # Status: DEMO DATA — representative scenario for Bihar demonstration.
+        # Location: Patna district, Bihar, India (INDIA coordinates — not US).
+        # Damage classifications: UNAVAILABLE — requires post-event imagery.
+        # Flood exposure ≠ structural destruction.
+        scen3_id = "scenario_bihar_flood_2024"
+        self._scenarios[scen3_id] = DisasterScenario(
+            scenario_id=scen3_id,
+            title="Ganga River Flood — Patna District, Bihar (DEMO DATA)",
+            disaster_type="FLOOD",
+            location="Patna, Bihar, India",
+            center_lat=25.5941,
+            center_lng=85.1376,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            total_structures=None,          # UNAVAILABLE
+            critical_structures=None,       # UNAVAILABLE
+            estimated_trapped=None,         # UNAVAILABLE
+            weather_condition="Monsoon season — High humidity, moderate rain",
+            golden_window_hours_left=36.0,
+            description=(
+                "DEMO DATA: Representative flood scenario for Bihar/Patna district. "
+                "Ganga river overflow affecting low-lying areas. "
+                "IMPORTANT: Damage classifications are UNAVAILABLE without verified "
+                "post-event satellite imagery. Flood exposure does NOT imply "
+                "structural destruction. All buildings require field inspection."
+            )
+        )
+
+        bldgs3 = [
+            EvidenceItem(
+                id="EVD-BR-001",
+                building_id="BR-PTN-B001",
+                name="Patna Collectorate Building",
+                damage_level="UNKNOWN",       # UNAVAILABLE — requires imagery
+                confidence=0.0,               # No confidence without model output
+                lat=25.6093,
+                lng=85.1235,
+                elevation_m=52.0,
+                area_sqm=2800.0,
+                estimated_victims=0,          # UNAVAILABLE
+                victim_confidence=0.0,
+                debris_density=0.0,           # UNAVAILABLE
+                road_access=True,             # Assumed passable until verified
+                road_blockage_pct=0.0,        # UNAVAILABLE
+                hazards=["Flood inundation possible", "Field verification required"],
+                aftershock_collapse_risk=0.0,
+                status="REQUIRES_FIELD_INSPECTION",
+                evidence=[
+                    "DEMO DATA: Flood exposure zone proximity",
+                    "No post-event imagery processed",
+                    "Damage classification UNAVAILABLE"
+                ],
+                priority="REQUIRES_INSPECTION",
+                recommended_action="Field inspection required — do not assume damage from flood exposure",
+                reason="DEMO DATA: Building within reported flood extent. Requires field verification.",
+            ),
+            EvidenceItem(
+                id="EVD-BR-002",
+                building_id="BR-PTN-B002",
+                name="Gandhi Setu Relief Camp",
+                damage_level="UNKNOWN",
+                confidence=0.0,
+                lat=25.6200,
+                lng=85.0800,
+                elevation_m=50.0,
+                area_sqm=1800.0,
+                estimated_victims=0,
+                victim_confidence=0.0,
+                debris_density=0.0,
+                road_access=True,
+                road_blockage_pct=0.0,
+                hazards=["Flood inundation possible", "Field verification required"],
+                aftershock_collapse_risk=0.0,
+                status="REQUIRES_FIELD_INSPECTION",
+                evidence=[
+                    "DEMO DATA: Flood exposure zone proximity",
+                    "No post-event imagery processed",
+                    "Damage classification UNAVAILABLE"
+                ],
+                priority="REQUIRES_INSPECTION",
+                recommended_action="Field inspection required",
+                reason="DEMO DATA: Within flood exposure area. Structural status unknown.",
+            ),
+            EvidenceItem(
+                id="EVD-BR-003",
+                building_id="BR-PTN-B003",
+                name="Patna Medical College (Peripheral Block)",
+                damage_level="UNKNOWN",
+                confidence=0.0,
+                lat=25.6027,
+                lng=85.1283,
+                elevation_m=54.0,
+                area_sqm=4200.0,
+                estimated_victims=0,
+                victim_confidence=0.0,
+                debris_density=0.0,
+                road_access=True,
+                road_blockage_pct=0.0,
+                hazards=["Critical infrastructure", "Flood periphery", "Field verification required"],
+                aftershock_collapse_risk=0.0,
+                status="REQUIRES_FIELD_INSPECTION",
+                evidence=[
+                    "DEMO DATA: Critical medical facility in flood zone periphery",
+                    "No post-event imagery processed",
+                    "Damage classification UNAVAILABLE"
+                ],
+                priority="REQUIRES_INSPECTION",
+                recommended_action="Priority field inspection — critical infrastructure",
+                reason="DEMO DATA: Critical medical facility requiring priority assessment.",
+            ),
+        ]
+        self._evidence[scen3_id] = {b.building_id: b for b in bldgs3}
+
     def get_scenario(self, scenario_id: str) -> Optional[DisasterScenario]:
         return self._scenarios.get(scenario_id)
 
