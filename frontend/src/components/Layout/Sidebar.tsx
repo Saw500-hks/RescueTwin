@@ -2,13 +2,14 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, UploadCloud, BarChart2, Box, AlertTriangle,
-  Building2, ShieldAlert, Activity, Map, FileDown, Layers, Target, Compass
+  Building2, ShieldAlert, Activity, Map, FileDown, Layers, Target, Compass, Cpu
 } from 'lucide-react';
 import useStore from '../../stores/useStore';
 import clsx from 'clsx';
 
 const navItems = [
   { to: '/', label: 'Home', icon: LayoutDashboard, end: true },
+  { to: '/agent', label: 'AI Commander', icon: Cpu, badge: 'Nemotron' },
   { to: '/map', label: 'Live Map', icon: Map },
   { to: '/upload', label: 'Analysis', icon: UploadCloud },
   { to: '/analysis', label: 'Results', icon: BarChart2 },
@@ -69,6 +70,11 @@ const Sidebar = () => {
                   }}
                 />
                 <span>{item.label}</span>
+                {item.badge && (
+                  <span className="ml-1.5 px-1.5 py-0.2 rounded text-[8px] font-mono font-extrabold uppercase tracking-wider bg-[#76B900]/20 text-[#76B900] border border-[#76B900]/30">
+                    {item.badge}
+                  </span>
+                )}
                 {isActive && (
                   <div className="ml-auto w-1 h-3.5 rounded-full bg-[#00E5FF] shadow-[0_0_8px_#00E5FF]" />
                 )}

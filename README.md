@@ -58,6 +58,31 @@ Drone Video / Images
 
 ---
 
+## 🤖 NVIDIA Nemotron Autonomous Agent Pipeline
+
+```
+Disaster Evidence (Satellite / Drone / Thermal Sensors)
+       ↓
+CV / 3D Analysis (YOLOv8 + SiameseDamageNet + Point Cloud)
+       ↓
+Evidence Store (Multi-modal Geo-referenced Intelligence Base)
+       ↓
+NVIDIA Nemotron (Llama-3.1-Nemotron-70B-Instruct Reasoning Engine)
+       ↓
+RescueTwin AI Agent (Autonomous ReAct Commander Orchestrator)
+       ↓
+Reasoning + Tool Calls (inspect_structure, assess_roads, dispatch_unit, simulate_aftershock)
+       ↓
+Actionable Rescue Plan (Golden Window Triage, Team Rosters, Evacuation Corridors)
+       ↓
+3D Command Dashboard (Real-time Spatial HUD, Three.js Twin & Field Dispatches)
+```
+
+RescueTwin utilizes **NVIDIA Nemotron** (`meta/llama-3.1-nemotron-70b-instruct`) as the cognitive core of its autonomous disaster coordinator. The agent ingests multi-hazard evidence, performs multi-step Chain-of-Thought reasoning with real-time tool calls (structural aftershock simulations, corridor traversability, thermal victim detection), and formulates an actionable 3-phase rescue plan prioritized for the critical 72-hour Golden Window.
+
+
+---
+
 ## 🎨 Damage Color Codes
 
 | Color | Level | Action |

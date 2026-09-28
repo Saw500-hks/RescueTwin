@@ -30,7 +30,8 @@ import {
   Sliders,
   Sparkles,
   Target,
-  Zap
+  Zap,
+  Cpu
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -139,11 +140,11 @@ const Dashboard = () => {
             {/* Action Buttons - Full width on mobile for easy one-thumb tap */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 pt-1 sm:pt-2">
               <button
-                onClick={() => navigate('/upload')}
-                className="btn-primary text-xs sm:text-sm py-3 px-5 sm:px-6 gap-2 sm:gap-2.5 font-bold shadow-[0_0_25px_rgba(0,163,255,0.45)] cursor-pointer justify-center touch-manipulation"
+                onClick={() => navigate('/agent')}
+                className="btn-primary text-xs sm:text-sm py-3 px-5 sm:px-6 gap-2 sm:gap-2.5 font-bold shadow-[0_0_25px_rgba(0,229,255,0.45)] cursor-pointer justify-center touch-manipulation bg-gradient-to-r from-[#00E5FF] via-[#00A3FF] to-[#76B900] text-black"
               >
-                <Zap className="w-4 h-4 fill-current flex-shrink-0" />
-                <span>Explore the System</span>
+                <Cpu className="w-4 h-4 flex-shrink-0" />
+                <span>AI Commander (Nemotron)</span>
                 <ArrowRight className="w-4 h-4 flex-shrink-0" />
               </button>
 

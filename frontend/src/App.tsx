@@ -7,6 +7,7 @@ import Upload from './pages/Upload';
 import Analysis from './pages/Analysis';
 import Viewer3D from './pages/Viewer3D';
 import PriorityReport from './pages/PriorityReport';
+import AgentCommandCenter from './pages/AgentCommandCenter';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/agent" element={<AgentCommandCenter />} />
           <Route path="/map" element={<GeoMap />} />
           <Route path="/upload" element={<Upload />} />
           <Route path="/analysis" element={<Analysis />} />

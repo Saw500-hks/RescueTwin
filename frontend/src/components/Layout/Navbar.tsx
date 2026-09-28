@@ -11,13 +11,15 @@ import {
   X,
   Activity,
   Smartphone,
-  Monitor
+  Monitor,
+  Cpu
 } from 'lucide-react';
 import useStore from '../../stores/useStore';
 import clsx from 'clsx';
 
 const navLinks = [
   { to: '/', label: 'Home', icon: Home, exact: true },
+  { to: '/agent', label: 'AI Commander', icon: Cpu },
   { to: '/map', label: 'Live Map', icon: MapIcon },
   { to: '/upload', label: 'Analysis', icon: BarChart2 },
   { to: '/analysis', label: 'Results', icon: FileText },

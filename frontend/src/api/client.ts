@@ -53,4 +53,43 @@ export const getReconstructionResult = async (jobId: string): Promise<Reconstruc
 export const getPriorityReport = async (jobId: string): Promise<RescuePriority[]> => {
   const res = await api.get(`/reports/${jobId}`);
   return res.data;
-}
+};
+
+// ==========================================
+// NVIDIA NEMOTRON AI AGENT API
+// ==========================================
+
+export const getAgentStatus = async () => {
+  const res = await api.get('/agent/status');
+  return res.data;
+};
+
+export const listAgentScenarios = async () => {
+  const res = await api.get('/agent/scenarios');
+  return res.data;
+};
+
+export const getAgentEvidence = async (scenarioId: string = 'scenario_earthquake_74') => {
+  const res = await api.get(`/agent/evidence?scenario_id=${scenarioId}`);
+  return res.data;
+};
+
+export const runAutonomousAgent = async (params: {
+  scenario_id?: string;
+  custom_directives?: string;
+  use_live_nim?: boolean;
+}) => {
+  const res = await api.post('/agent/run', params);
+  return res.data;
+};
+
+export const listAgentPlans = async () => {
+  const res = await api.get('/agent/plans');
+  return res.data;
+};
+
+export const executeAgentTool = async (toolName: string, payload: Record<string, any>) => {
+  const res = await api.post(`/agent/tools/${toolName}`, payload);
+  return res.data;
+};
+
