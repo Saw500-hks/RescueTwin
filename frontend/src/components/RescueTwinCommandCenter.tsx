@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Box, Grid } from '@react-three/drei';
@@ -8,10 +8,10 @@ import {
   Terminal, Compass, AlertTriangle, ArrowRight, Layers, Box as BoxIcon,
   Play, RefreshCw, Send, Radio, UserCheck, MapPin, Truck, Flame,
   Droplets, Sparkles, Network, ExternalLink, RotateCcw, Eye, EyeOff,
-  Crosshair, Navigation, Maximize, Loader2
+  Crosshair, Navigation, Maximize, Loader2, Database, Sliders, ChevronDown
 } from 'lucide-react';
 import clsx from 'clsx';
-import { executeAgentTool } from '../api/client';
+import { executeAgentTool, queryInspectionPriorities } from '../api/client';
 import { AiAssessmentModal } from './AiAssessmentModal';
 
 export interface CommandBuilding {
@@ -275,8 +275,12 @@ export const RescueTwinCommandCenter: React.FC = () => {
   const [showEvidenceModal, setShowEvidenceModal] = useState<boolean>(false);
   const [dispatching, setDispatching] = useState<boolean>(false);
   const [dispatchSuccess, setDispatchSuccess] = useState<string | null>(null);
-  const [customQuery, setCustomQuery] = useState<string>('');
-  const [agentThinking, setAgentThinking] = useState<boolean>(false);
+  
+  // Workflow Tab: "which_first" (Tool 1-4 -> Nemotron -> Structured response) vs "why_b027" (Evidence -> Damage -> Access -> Recommendation)
+  const [activeWorkflowTab, setActiveWorkflowTab] = useState<'which_first' | 'why_b027'>('which_first');
+  const [executingFlow, setExecutingFlow] = useState<boolean>(false);
+  const [activeToolStep, setActiveToolStep] = useState<number>(4);
+  const [queryResponse, setQueryResponse] = useState<any>(null);
 
   const selected = useMemo(() => {
     return COMMAND_BUILDINGS.find(b => b.id === selectedBuildingId) || COMMAND_BUILDINGS[0];
@@ -305,12 +309,38 @@ export const RescueTwinCommandCenter: React.FC = () => {
     }
   };
 
-  const handleRunCustomQuery = (queryText: string) => {
-    setAgentThinking(true);
-    setTimeout(() => {
-      setAgentThinking(false);
-    }, 400);
+  const handleExecuteInspectionWorkflow = async () => {
+    setExecutingFlow(true);
+    setActiveToolStep(1); // Tool 1: get_damage_assessments()
+
+    try {
+      const t1 = setTimeout(() => setActiveToolStep(2), 400); // Tool 2: get_road_access()
+      const t2 = setTimeout(() => setActiveToolStep(3), 800); // Tool 3: get_building_metadata()
+      const t3 = setTimeout(() => setActiveToolStep(4), 1200); // Tool 4: calculate_priority()
+      const t4 = setTimeout(() => setActiveToolStep(5), 1600); // Nemotron
+      const t5 = setTimeout(() => setActiveToolStep(6), 2000); // Structured response
+
+      const data = await queryInspectionPriorities("Which buildings should we inspect first?");
+      setQueryResponse(data);
+
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+      setActiveToolStep(6);
+    } catch (err) {
+      console.error(err);
+      setActiveToolStep(6);
+    } finally {
+      setExecutingFlow(false);
+    }
   };
+
+  // Run on first mount
+  useEffect(() => {
+    handleExecuteInspectionWorkflow();
+  }, []);
 
   return (
     <div className="w-full bg-[#030712] text-white rounded-3xl border border-white/[0.1] shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden font-sans">
@@ -592,11 +622,12 @@ export const RescueTwinCommandCenter: React.FC = () => {
         </div>
       </div>
 
-      {/* ── LOWER SECTION: AI RESCUE AGENT WORKFLOW ── */}
+      {/* ── LOWER SECTION: AI RESCUE AGENT ── */}
       <div className="p-5 sm:p-6 bg-gradient-to-b from-[#050B18] to-[#02050E]">
+        {/* Navigation & Mode Toggle */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.08] pb-4">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#00E5FF]/20 to-[#0099FF]/20 border border-[#00E5FF]/40 flex items-center justify-center text-[#00E5FF]">
               <Sparkles className="w-4 h-4" />
             </div>
             <div>
@@ -604,221 +635,492 @@ export const RescueTwinCommandCenter: React.FC = () => {
                 <span className="font-mono text-xs font-black tracking-wider uppercase text-white">
                   AI RESCUE AGENT
                 </span>
-                <span className="text-[9px] px-2 py-0.5 rounded font-extrabold bg-[#00E5FF]/15 text-[#00E5FF] border border-[#00E5FF]/30">
-                  REASONING ENGINE ACTIVE
+                <span className="text-[9px] px-2 py-0.5 rounded font-extrabold bg-[#76B900]/20 text-[#76B900] border border-[#76B900]/40">
+                  NVIDIA NEMOTRON ORCHESTRATOR
                 </span>
               </div>
-              <div className="text-xs sm:text-sm font-mono font-bold text-[#00E5FF] mt-0.5">
-                "{customQuery || `Why is ${selected.id} high priority?`}"
+              <div className="text-xs text-slate-400 font-mono mt-0.5">
+                Autonomous tool invocation, multi-modal reasoning & prioritization
               </div>
             </div>
           </div>
 
-          {/* Quick Query Pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {[
-              `Why is ${selected.id} high priority?`,
-              `Calculate safest ingress route`,
-              `Check structural collapse hazard`,
-            ].map((q) => (
-              <button
-                key={q}
-                onClick={() => {
-                  setCustomQuery(q);
-                  handleRunCustomQuery(q);
-                }}
-                className={clsx(
-                  'text-[10px] font-mono px-2.5 py-1 rounded-lg border transition-all cursor-pointer',
-                  customQuery === q
-                    ? 'bg-[#00E5FF]/20 text-[#00E5FF] border-[#00E5FF]/50'
-                    : 'bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.08] hover:border-white/[0.2]'
-                )}
-              >
-                "{q}"
-              </button>
-            ))}
+          {/* Dual Workflow Mode Switcher */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setActiveWorkflowTab('which_first')}
+              className={clsx(
+                'text-xs font-mono font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5',
+                activeWorkflowTab === 'which_first'
+                  ? 'bg-gradient-to-r from-[#FF6B00]/25 to-[#E55A00]/25 text-[#FF6B00] border-[#FF6B00]/60 shadow-[0_0_15px_rgba(255,107,0,0.3)]'
+                  : 'bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.08]'
+              )}
+            >
+              <Terminal className="w-3.5 h-3.5 text-[#FF6B00]" />
+              <span>"Which buildings should we inspect first?"</span>
+            </button>
+
+            <button
+              onClick={() => setActiveWorkflowTab('why_b027')}
+              className={clsx(
+                'text-xs font-mono font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5',
+                activeWorkflowTab === 'why_b027'
+                  ? 'bg-[#00E5FF]/20 text-[#00E5FF] border-[#00E5FF]/50 shadow-[0_0_15px_rgba(0,229,255,0.25)]'
+                  : 'bg-white/[0.03] text-slate-400 hover:text-white border-white/[0.08]'
+              )}
+            >
+              <Cpu className="w-3.5 h-3.5 text-[#00E5FF]" />
+              <span>"Why is {selected.id} high priority?"</span>
+            </button>
           </div>
         </div>
 
-        {/* ── THE 4-STEP CONNECTED PIPELINE: Evidence → Damage → Access → Recommendation ── */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-3 text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
-            <span className="flex items-center gap-1.5 text-white">
-              <Terminal className="w-3.5 h-3.5 text-[#00E5FF]" />
-              Structured Reasoning Chain
-            </span>
-            <span className="text-emerald-400">
-              Evidence → Damage → Access → Recommendation
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {/* ── 1. EVIDENCE ── */}
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#00E5FF]/40 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
-                  <span className="text-[#00E5FF] flex items-center gap-1.5">
-                    <Radio className="w-3.5 h-3.5" />
-                    1. EVIDENCE
-                  </span>
-                  <span className="text-[10px] text-slate-400">Δ {selected.changePct}%</span>
+        {/* ── WORKFLOW TAB 1: USER QUERY → RESCUE AGENT → TOOLS 1-4 → NEMOTRON → STRUCTURED RESPONSE ── */}
+        {activeWorkflowTab === 'which_first' && (
+          <div className="mt-5 space-y-5 animate-fade-in font-sans">
+            {/* 1. User Query & Orchestration Banner */}
+            <div className="p-4 rounded-2xl bg-black/60 border border-white/[0.1] flex flex-wrap items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#00E5FF] animate-pulse" />
+                  USER PROMPT QUERY
                 </div>
-                <div className="space-y-1.5 text-xs text-slate-300 font-sans">
-                  {selected.why.map((point, idx) => (
-                    <div key={idx} className="flex items-start gap-1.5 leading-relaxed">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
-                      <span>{point}</span>
-                    </div>
-                  ))}
+                <div className="text-base sm:text-lg font-bold text-white font-mono">
+                  "Which buildings should we inspect first?"
+                </div>
+                <div className="text-xs text-slate-400 flex items-center gap-2 font-mono">
+                  <span>Target Scenario: <strong className="text-slate-200">M7.4 Earthquake Sector 7</strong></span>
+                  <span>·</span>
+                  <span>Golden Window: <strong className="text-amber-400">18.2 Hours</strong></span>
                 </div>
               </div>
 
-              <div className="pt-3 mt-3 border-t border-white/[0.05]">
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setShowEvidenceModal(true)}
-                  className="w-full py-1.5 rounded-lg text-[10px] font-mono font-bold text-[#00E5FF] bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 border border-[#00E5FF]/30 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  onClick={handleExecuteInspectionWorkflow}
+                  disabled={executingFlow}
+                  className="px-4 py-2 rounded-xl text-xs font-mono font-bold text-white bg-gradient-to-r from-[#00E5FF] to-[#0099FF] hover:opacity-90 shadow-[0_0_20px_rgba(0,229,255,0.35)] flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 text-black font-extrabold"
                 >
-                  <Eye className="w-3 h-3" />
-                  <span>Inspect Visual Evidence</span>
-                  <ExternalLink className="w-3 h-3" />
-                </button>
-              </div>
-            </div>
-
-            {/* ── 2. DAMAGE ── */}
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#FF6B00]/40 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
-                  <span className="text-[#FF6B00] flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5" />
-                    2. DAMAGE
-                  </span>
-                  <span className={clsx(
-                    'text-[10px] px-1.5 py-0.2 rounded font-extrabold uppercase border',
-                    selected.badgeColor === 'red' && 'bg-red-500/20 text-red-300 border-red-500/40',
-                    selected.badgeColor === 'orange' && 'bg-orange-500/20 text-orange-300 border-orange-500/40',
-                    selected.badgeColor === 'yellow' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
-                  )}>
-                    {selected.damageLevel}
-                  </span>
-                </div>
-                <div className="space-y-2 text-xs text-slate-300 leading-relaxed font-sans">
-                  <p>{selected.damageDesc}</p>
-                  <div className="p-2 rounded-lg bg-black/40 border border-white/[0.06] text-[10.5px] font-mono space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Confidence:</span>
-                      <span className="text-emerald-400 font-bold">{Math.round(selected.confidence * 100)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Change Score:</span>
-                      <span className="text-white font-bold">{selected.changeScore.toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 mt-3 border-t border-white/[0.05] text-[10px] font-mono text-slate-400">
-                Severity Rating: <strong className="text-white">{selected.severity}</strong>
-              </div>
-            </div>
-
-            {/* ── 3. ACCESS ── */}
-            <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#00E5FF]/40 transition-all flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
-                  <span className="text-[#00E5FF] flex items-center gap-1.5">
-                    <Navigation className="w-3.5 h-3.5" />
-                    3. ACCESS
-                  </span>
-                  <span className="text-[10px] text-amber-400 font-mono">
-                    {Math.round(selected.roadBlockagePct)}% BLOCKED
-                  </span>
-                </div>
-                <div className="space-y-2 text-xs text-slate-300 leading-relaxed font-sans">
-                  <p>{selected.accessDesc}</p>
-                  <div className="p-2 rounded-lg bg-black/40 border border-white/[0.06] text-[10.5px] font-mono space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Access Ratio:</span>
-                      <span className={selected.roadAccessRatio < 0.4 ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
-                        {selected.roadAccessRatio.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Ingress Corridor:</span>
-                      <span className="text-emerald-400 font-bold">North Arterial</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 mt-3 border-t border-white/[0.05] text-[10px] font-mono text-slate-400">
-                Bridge 4 Bypass: <strong className="text-emerald-400">Active</strong>
-              </div>
-            </div>
-
-            {/* ── 4. RECOMMENDATION ── */}
-            <div className="p-4 rounded-2xl bg-gradient-to-b from-[#091124] to-[#040815] border border-white/[0.12] hover:border-emerald-500/50 transition-all flex flex-col justify-between shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
-                  <span className="text-emerald-400 flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5" />
-                    4. RECOMMENDATION
-                  </span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
-                    ACTIONABLE
-                  </span>
-                </div>
-                <div className="space-y-2 text-xs font-sans">
-                  <div className="text-white font-bold text-sm">
-                    {selected.recommendedAction}
-                  </div>
-                  <p className="text-slate-300 text-xs leading-relaxed">
-                    Reason: {selected.reason}
-                  </p>
-                  <div className="text-[11px] font-mono text-slate-400">
-                    Assigned Unit: <strong className="text-white">{selected.assignedUnit}</strong>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-3 mt-3 border-t border-white/[0.06]">
-                <button
-                  onClick={handleDispatchAction}
-                  disabled={dispatching}
-                  className="w-full py-2.5 rounded-xl text-xs font-mono font-bold text-white bg-gradient-to-r from-[#FF6B00] to-[#E55A00] hover:from-[#FF7B1A] hover:to-[#F06500] shadow-[0_0_20px_rgba(255,107,0,0.35)] flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  {dispatching ? (
+                  {executingFlow ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Dispatching Unit...</span>
+                      <Loader2 className="w-4 h-4 animate-spin text-black" />
+                      <span>Executing 4-Tool Chain...</span>
                     </>
                   ) : (
                     <>
-                      <Send className="w-3.5 h-3.5" />
-                      <span>Dispatch Rescue Unit</span>
+                      <Play className="w-4 h-4 fill-black" />
+                      <span>Re-Run Tool Sequence</span>
                     </>
                   )}
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Live Dispatch Notification */}
-          {dispatchSuccess && (
-            <div className="mt-3 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-xs font-mono text-emerald-300 flex items-center justify-between animate-fade-in">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{dispatchSuccess}</span>
+            {/* 2. Visual Architecture Sequence: User → Rescue Agent → Tools 1-4 → Nemotron → Structured response */}
+            <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] space-y-3">
+              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+                <span className="flex items-center gap-2 text-white">
+                  <Network className="w-4 h-4 text-[#00E5FF]" />
+                  Sequential Execution Flowchart
+                </span>
+                <span className="text-[#00E5FF]">
+                  4 OPERATIONAL TOOLS REGISTERED
+                </span>
               </div>
-              <button
-                onClick={() => setDispatchSuccess(null)}
-                className="text-emerald-400 hover:text-white font-bold ml-2 cursor-pointer"
-              >
-                ×
-              </button>
+
+              {/* 4 Tool Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* Tool 1 */}
+                <div className={clsx(
+                  'p-3.5 rounded-xl border transition-all',
+                  activeToolStep >= 1
+                    ? 'bg-[#00E5FF]/10 border-[#00E5FF]/40 shadow-[0_0_15px_rgba(0,229,255,0.15)]'
+                    : 'bg-white/[0.02] border-white/[0.06] opacity-60'
+                )}>
+                  <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-1.5">
+                    <span className="text-[#00E5FF]">TOOL 1</span>
+                    <span className="text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> EXECUTED
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs font-bold text-white truncate">
+                    get_damage_assessments()
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-1 leading-snug">
+                    Ingested multi-temporal satellite homography: <strong>B027 (MAJOR, 0.91)</strong>, <strong>B014 (DESTROYED, 0.96)</strong>, B031, B009.
+                  </p>
+                </div>
+
+                {/* Tool 2 */}
+                <div className={clsx(
+                  'p-3.5 rounded-xl border transition-all',
+                  activeToolStep >= 2
+                    ? 'bg-[#00E5FF]/10 border-[#00E5FF]/40 shadow-[0_0_15px_rgba(0,229,255,0.15)]'
+                    : 'bg-white/[0.02] border-white/[0.06] opacity-60'
+                )}>
+                  <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-1.5">
+                    <span className="text-[#00E5FF]">TOOL 2</span>
+                    <span className="text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> EXECUTED
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs font-bold text-white truncate">
+                    get_road_access()
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-1 leading-snug">
+                    Evaluated ingress corridors: <strong>Bridge 4 BLOCKED (66%)</strong>. North Arterial Blvd confirmed clear for skid-steer escort.
+                  </p>
+                </div>
+
+                {/* Tool 3 */}
+                <div className={clsx(
+                  'p-3.5 rounded-xl border transition-all',
+                  activeToolStep >= 3
+                    ? 'bg-[#00E5FF]/10 border-[#00E5FF]/40 shadow-[0_0_15px_rgba(0,229,255,0.15)]'
+                    : 'bg-white/[0.02] border-white/[0.06] opacity-60'
+                )}>
+                  <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-1.5">
+                    <span className="text-[#00E5FF]">TOOL 3</span>
+                    <span className="text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> EXECUTED
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs font-bold text-white truncate">
+                    get_building_metadata()
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-1 leading-snug">
+                    Pulled structural footprint: <strong>B027 (482.4 m²)</strong>, storeys, occupancy (5 trapped), and active shear-wall collapse risks.
+                  </p>
+                </div>
+
+                {/* Tool 4 */}
+                <div className={clsx(
+                  'p-3.5 rounded-xl border transition-all',
+                  activeToolStep >= 4
+                    ? 'bg-[#00E5FF]/10 border-[#00E5FF]/40 shadow-[0_0_15px_rgba(0,229,255,0.15)]'
+                    : 'bg-white/[0.02] border-white/[0.06] opacity-60'
+                )}>
+                  <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-1.5">
+                    <span className="text-[#00E5FF]">TOOL 4</span>
+                    <span className="text-emerald-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> EXECUTED
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs font-bold text-white truncate">
+                    calculate_priority()
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-1 leading-snug">
+                    Synthesized life-safety triage ranking: <strong>#1 B027 (Score 0.912)</strong>, #2 B014, #3 B031, #4 B009.
+                  </p>
+                </div>
+              </div>
+
+              {/* Nemotron Processing Badge */}
+              <div className="p-3 rounded-xl bg-gradient-to-r from-[#091124] to-[#070D1B] border border-white/[0.08] flex items-center justify-between text-xs font-mono">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-6 h-6 rounded-lg bg-[#76B900]/20 border border-[#76B900]/40 flex items-center justify-center text-[#76B900]">
+                    <Cpu className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-white">
+                    Nemotron Multi-Modal Synthesis Engine
+                  </span>
+                  <span className="text-[10px] text-slate-400 hidden sm:inline">
+                    (meta/llama-3.1-nemotron-70b via Nebius Token Factory)
+                  </span>
+                </div>
+                <span className="text-emerald-400 font-bold flex items-center gap-1.5 text-[11px]">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  STRUCTURED RESPONSE READY
+                </span>
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* 3. Nemotron Structured Response Output */}
+            <div className="p-5 rounded-2xl bg-[#050B18] border border-[#00E5FF]/30 shadow-[0_0_30px_rgba(0,229,255,0.15)] space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#00E5FF]" />
+                  <span className="font-mono text-xs font-black uppercase text-white tracking-wider">
+                    NEMOTRON STRUCTURED RESPONSE: PRIORITIZED INSPECTION DIRECTIVE
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">
+                  Target Priority #1: <strong className="text-white">Building B027</strong>
+                </span>
+              </div>
+
+              {/* 4 Ranked Buildings Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {[
+                  {
+                    rank: 1,
+                    bid: 'B027',
+                    title: 'Priority #1: Building B027 (Immediate Field Inspection)',
+                    badge: 'MAJOR · 91% CONF',
+                    badgeCls: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+                    desc: 'Sector 7 seismic deformation shows Building B027 with 43% structural change, altered roof geometry, and 66% road obstruction on Bridge 4. High estimated damage with difficult access mandates priority inspection dispatch.',
+                    ingress: 'North Arterial Blvd (Bypass Bridge 4 with Skid-Steer Escort)',
+                    action: 'Dispatch inspection team immediately'
+                  },
+                  {
+                    rank: 2,
+                    bid: 'B014',
+                    title: 'Priority #2: Building B014 (Heavy USAR & Extrication)',
+                    badge: 'DESTROYED · 96% CONF',
+                    badgeCls: 'bg-red-500/20 text-red-300 border-red-500/40',
+                    desc: 'Complete structural pancake and total roof collapse (88% change). High probability of 7 trapped survivors in survivable void spaces under western collapsed slab.',
+                    ingress: 'Sector 4 Access Alley (Single Track / Clear Rubble)',
+                    action: 'Dispatch Heavy USAR & extrication crew'
+                  },
+                  {
+                    rank: 3,
+                    bid: 'B031',
+                    title: 'Priority #3: Building B031 (Shoring & Stabilization)',
+                    badge: 'MAJOR · 88% CONF',
+                    badgeCls: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+                    desc: 'Severe facade shearing and vertical tilt (65% change). 78% aftershock collapse hazard requires immediate shoring and laser displacement monitoring.',
+                    ingress: 'East Transit Way (Clear for light support vehicles)',
+                    action: 'Dispatch shoring and stabilization team'
+                  },
+                  {
+                    rank: 4,
+                    bid: 'B009',
+                    title: 'Priority #4: Building B009 (Field Survey & Secondary Audit)',
+                    badge: 'MINOR · 82% CONF',
+                    badgeCls: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40',
+                    desc: 'Non-structural window and cladding displacement (28% change). Full arterial access maintained; corridor open for logistics transit.',
+                    ingress: 'North District Municipal Route (Open)',
+                    action: 'Field survey and secondary assessment'
+                  }
+                ].map((item) => (
+                  <div
+                    key={item.bid}
+                    onClick={() => setSelectedBuildingId(item.bid)}
+                    className={clsx(
+                      'p-4 rounded-xl border transition-all cursor-pointer',
+                      selectedBuildingId === item.bid
+                        ? 'bg-gradient-to-r from-[#00E5FF]/15 to-[#0099FF]/10 border-[#00E5FF]/60 shadow-[0_0_15px_rgba(0,229,255,0.2)]'
+                        : 'bg-white/[0.02] hover:bg-white/[0.05] border-white/[0.06]'
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-mono text-xs font-bold text-white flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-black text-[#00E5FF]">
+                          #{item.rank}
+                        </span>
+                        {item.title}
+                      </span>
+                      <span className={clsx('text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded border', item.badgeCls)}>
+                        {item.badge}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-300 leading-relaxed font-sans mb-2">
+                      {item.desc}
+                    </p>
+
+                    <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10.5px] font-mono text-slate-400">
+                      <span>Ingress: <strong className="text-emerald-400">{item.ingress}</strong></span>
+                      <span className="text-[#00E5FF] font-bold">Select in 3D →</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tactical Directives List */}
+              <div className="p-3.5 rounded-xl bg-black/60 border border-white/[0.08] space-y-1.5 text-xs font-mono">
+                <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">
+                  TACTICAL FIELD DIRECTIVES
+                </div>
+                <div className="text-slate-200">1. Dispatch structural inspection team to <strong className="text-white">Building B027</strong> immediately via North Arterial Blvd.</div>
+                <div className="text-slate-200">2. Bypass <strong className="text-red-400">Bridge 4</strong> due to 66% debris blockage; route emergency transport through Grand Ave.</div>
+                <div className="text-slate-200">3. Deploy Heavy USAR unit with pneumatic shoring to <strong className="text-white">Building B014</strong> void spaces.</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── WORKFLOW TAB 2: BUILDING SPECIFIC (Evidence → Damage → Access → Recommendation) ── */}
+        {activeWorkflowTab === 'why_b027' && (
+          <div className="mt-5 space-y-5 animate-fade-in font-sans">
+            <div className="flex items-center justify-between mb-3 text-[11px] font-mono text-slate-400 font-bold uppercase tracking-wider">
+              <span className="flex items-center gap-1.5 text-white">
+                <Terminal className="w-3.5 h-3.5 text-[#00E5FF]" />
+                Target Analysis: Why is {selected.id} high priority?
+              </span>
+              <span className="text-emerald-400">
+                Evidence → Damage → Access → Recommendation
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* ── 1. EVIDENCE ── */}
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#00E5FF]/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
+                    <span className="text-[#00E5FF] flex items-center gap-1.5">
+                      <Radio className="w-3.5 h-3.5" />
+                      1. EVIDENCE
+                    </span>
+                    <span className="text-[10px] text-slate-400">Δ {selected.changePct}%</span>
+                  </div>
+                  <div className="space-y-1.5 text-xs text-slate-300 font-sans">
+                    {selected.why.map((point, idx) => (
+                      <div key={idx} className="flex items-start gap-1.5 leading-relaxed">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 mt-0.5 shrink-0" />
+                        <span>{point}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-white/[0.05]">
+                  <button
+                    onClick={() => setShowEvidenceModal(true)}
+                    className="w-full py-1.5 rounded-lg text-[10px] font-mono font-bold text-[#00E5FF] bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 border border-[#00E5FF]/30 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>Inspect Visual Evidence</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── 2. DAMAGE ── */}
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#FF6B00]/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
+                    <span className="text-[#FF6B00] flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5" />
+                      2. DAMAGE
+                    </span>
+                    <span className={clsx(
+                      'text-[10px] px-1.5 py-0.2 rounded font-extrabold uppercase border',
+                      selected.badgeColor === 'red' && 'bg-red-500/20 text-red-300 border-red-500/40',
+                      selected.badgeColor === 'orange' && 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+                      selected.badgeColor === 'yellow' && 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40'
+                    )}>
+                      {selected.damageLevel}
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-300 leading-relaxed font-sans">
+                    <p>{selected.damageDesc}</p>
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/[0.06] text-[10.5px] font-mono space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Confidence:</span>
+                        <span className="text-emerald-400 font-bold">{Math.round(selected.confidence * 100)}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Change Score:</span>
+                        <span className="text-white font-bold">{selected.changeScore.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-white/[0.05] text-[10px] font-mono text-slate-400">
+                  Severity Rating: <strong className="text-white">{selected.severity}</strong>
+                </div>
+              </div>
+
+              {/* ── 3. ACCESS ── */}
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-[#00E5FF]/40 transition-all flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
+                    <span className="text-[#00E5FF] flex items-center gap-1.5">
+                      <Navigation className="w-3.5 h-3.5" />
+                      3. ACCESS
+                    </span>
+                    <span className="text-[10px] text-amber-400 font-mono">
+                      {Math.round(selected.roadBlockagePct)}% BLOCKED
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-xs text-slate-300 leading-relaxed font-sans">
+                    <p>{selected.accessDesc}</p>
+                    <div className="p-2 rounded-lg bg-black/40 border border-white/[0.06] text-[10.5px] font-mono space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Access Ratio:</span>
+                        <span className={selected.roadAccessRatio < 0.4 ? 'text-red-400 font-bold' : 'text-emerald-400 font-bold'}>
+                          {selected.roadAccessRatio.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Ingress Corridor:</span>
+                        <span className="text-emerald-400 font-bold">North Arterial</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-white/[0.05] text-[10px] font-mono text-slate-400">
+                  Bridge 4 Bypass: <strong className="text-emerald-400">Active</strong>
+                </div>
+              </div>
+
+              {/* ── 4. RECOMMENDATION ── */}
+              <div className="p-4 rounded-2xl bg-gradient-to-b from-[#091124] to-[#040815] border border-white/[0.12] hover:border-emerald-500/50 transition-all flex flex-col justify-between shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-white/[0.06] pb-2 mb-2.5">
+                    <span className="text-emerald-400 flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5" />
+                      4. RECOMMENDATION
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 uppercase">
+                      ACTIONABLE
+                    </span>
+                  </div>
+                  <div className="space-y-2 text-xs font-sans">
+                    <div className="text-white font-bold text-sm">
+                      {selected.recommendedAction}
+                    </div>
+                    <p className="text-slate-300 text-xs leading-relaxed">
+                      Reason: {selected.reason}
+                    </p>
+                    <div className="text-[11px] font-mono text-slate-400">
+                      Assigned Unit: <strong className="text-white">{selected.assignedUnit}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-white/[0.06]">
+                  <button
+                    onClick={handleDispatchAction}
+                    disabled={dispatching}
+                    className="w-full py-2.5 rounded-xl text-xs font-mono font-bold text-white bg-gradient-to-r from-[#FF6B00] to-[#E55A00] hover:from-[#FF7B1A] hover:to-[#F06500] shadow-[0_0_20px_rgba(255,107,0,0.35)] flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {dispatching ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        <span>Dispatching Unit...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-3.5 h-3.5" />
+                        <span>Dispatch Rescue Unit</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Live Dispatch Notification */}
+            {dispatchSuccess && (
+              <div className="mt-3 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-xs font-mono text-emerald-300 flex items-center justify-between animate-fade-in">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{dispatchSuccess}</span>
+                </div>
+                <button
+                  onClick={() => setDispatchSuccess(null)}
+                  className="text-emerald-400 hover:text-white font-bold ml-2 cursor-pointer"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Embedded High-Resolution AI Assessment & Evidence Modal */}

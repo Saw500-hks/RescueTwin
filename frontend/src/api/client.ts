@@ -93,6 +93,11 @@ export const executeAgentTool = async (toolName: string, payload: Record<string,
   return res.data;
 };
 
+export const queryInspectionPriorities = async (query: string = "Which buildings should we inspect first?", scenarioId: string = "scenario_earthquake_74") => {
+  const res = await api.post('/agent/query-inspection-priorities', { query, scenario_id: scenarioId });
+  return res.data;
+};
+
 // ==========================================
 // 5-STEP COMPUTER VISION & GEOSPATIAL PIPELINE
 // ==========================================
