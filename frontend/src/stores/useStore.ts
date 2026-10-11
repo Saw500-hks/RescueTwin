@@ -8,6 +8,8 @@ interface StoreState {
   priorities: RescuePriority[];
   reconstructionResult: ReconstructionResult | null;
   selectedBuilding: string | null;
+  show3DIntro: boolean;
+  setShow3DIntro: (show: boolean) => void;
   phoneFrameMode: boolean;
   setPhoneFrameMode: (active: boolean) => void;
   togglePhoneFrameMode: () => void;
@@ -21,6 +23,8 @@ interface StoreState {
 }
 
 const useStore = create<StoreState>((set) => ({
+  show3DIntro: true,
+  setShow3DIntro: (show) => set({ show3DIntro: show }),
   phoneFrameMode: false,
   setPhoneFrameMode: (active) => set({ phoneFrameMode: active }),
   togglePhoneFrameMode: () => set((state) => ({ phoneFrameMode: !state.phoneFrameMode })),

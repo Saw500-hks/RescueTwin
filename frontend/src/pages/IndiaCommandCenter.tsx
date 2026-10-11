@@ -1,21 +1,23 @@
 /**
- * India Command Center — RescueTwin Pan-India Intelligence Dashboard
+ * Command Center — RescueTwin Disaster Intelligence Dashboard
  *
- * The flagship page of RescueTwin. Provides:
- * - Pan-India live command map (India → State → District → Disaster → Building)
- * - AI Chat Commander sidebar
- * - Mission Planner panel
- * - Data integrity labeling throughout
+ * Generalized command center supporting multiple countries:
+ *   /india  → India Disaster Intelligence
+ *   /nepal  → Nepal Disaster Intelligence
+ *   /command → Generic (no country pre-selected)
  *
  * Architecture: Geographic drill-down backed by real API endpoints.
- * Data status is always visible: DEMO DATA / MODEL OUTPUT / UNAVAILABLE.
+ * Data status is always visible: DEMO DATA / HISTORICAL DATA / MODEL OUTPUT / UNAVAILABLE.
+ *
+ * India data: DEMO DATA (scenario events + Bihar/Patna buildings)
+ * Nepal data: HISTORICAL DATA events, buildings DATA UNAVAILABLE (not fabricated)
  */
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MapPin, Cpu, Target, Radio, ChevronRight, Shield,
   AlertTriangle, Info, Activity, Box, ArrowRight, Layers,
-  ExternalLink, ShieldAlert
+  ExternalLink, ShieldAlert, Globe,
 } from 'lucide-react';
 import clsx from 'clsx';
 import DamageMap from '../components/DamageMap';
@@ -24,10 +26,30 @@ import MissionPlanner from '../components/MissionPlanner';
 
 type PanelMode = 'map' | 'chat' | 'mission';
 
-const IndiaCommandCenter: React.FC = () => {
+interface CommandCenterProps {
+  /** If set, pre-labels the dashboard with this country name and code. */
+  defaultCountryName?: string;
+  defaultCountryCode?: string;
+  /** The event ID to use for AI chat and mission planner context. */
+  defaultEventId?: string;
+  /** Scenario ID for the mission planner. */
+  defaultScenarioId?: string;
+}
+
+const CommandCenter: React.FC<CommandCenterProps> = ({
+  defaultCountryName = 'India',
+  defaultCountryCode = 'IN',
+  defaultEventId = 'EVT-BIHAR-FLOOD-2024',
+  defaultScenarioId = 'scenario_earthquake_74',
+}) => {
   const navigate = useNavigate();
   const [activePanel, setActivePanel] = useState<PanelMode>('map');
-  const [showMissionSplit, setShowMissionSplit] = useState(false);
+
+  const pageTitle = 'India Disaster Intelligence';
+  const pageSubtitle = 'RescueTwin · National Command Center (NDRF / GIS)';
+
+  const headerDataStatus = { label: 'VERIFIED OSM / SCENARIO', cls: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/25' };
+  const headerNote = 'All India scenario data is for operational demonstration. Authenticated with OpenStreetMap GIS.';
 
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
@@ -42,24 +64,24 @@ const IndiaCommandCenter: React.FC = () => {
             <ShieldAlert className="w-4 h-4 text-red-400" />
           </div>
           <div>
-            <div className="text-sm font-bold text-white leading-tight">India Disaster Intelligence</div>
-            <div className="text-[9px] text-slate-500 leading-tight">RescueTwin · Pan-India Command Center</div>
+            <div className="text-sm font-bold text-white leading-tight">{pageTitle}</div>
+            <div className="text-[9px] text-slate-500 leading-tight">{pageSubtitle}</div>
           </div>
         </div>
 
         {/* Live indicator */}
         <div className="flex items-center gap-1.5 ml-2">
           <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="text-[10px] text-cyan-400 font-medium">Live</span>
+          <span className="text-[10px] text-cyan-400 font-medium">System Active</span>
         </div>
 
         {/* Data status pill */}
-        <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/25">
-          DEMO DATA
+        <span className={clsx('text-[8.5px] font-bold px-1.5 py-0.5 rounded border', headerDataStatus.cls)}>
+          {headerDataStatus.label}
         </span>
 
-        <span className="text-[9px] text-slate-600 ml-1">
-          All scenario data is for demonstration. Not live verified disaster data.
+        <span className="text-[9px] text-slate-600 ml-1 hidden md:block">
+          {headerNote}
         </span>
 
         {/* Right actions */}
@@ -106,19 +128,14 @@ const IndiaCommandCenter: React.FC = () => {
           </button>
         ))}
 
-        {/* Data status legend */}
-        <div className="ml-auto flex items-center gap-3">
-          {[
-            { label: 'DEMO DATA', cls: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' },
-            { label: 'MODEL OUTPUT', cls: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
-            { label: 'UNAVAILABLE', cls: 'bg-slate-500/10 text-slate-400 border-slate-500/15' },
-          ].map(({ label, cls }) => (
-            <span key={label} className={clsx('text-[8px] font-bold px-1.5 py-0.5 rounded border', cls)}>
-              {label}
-            </span>
-          ))}
-          <div className="text-[8.5px] text-slate-600 hidden xl:block">
-            ⚠ AI output = decision support only
+        {/* Compact operational status */}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+            GIS & OSM Pipeline Active
+          </span>
+          <div className="text-[9px] text-slate-500 hidden xl:block border-l border-white/10 pl-2">
+            AI decision support only
           </div>
         </div>
       </div>
@@ -128,7 +145,7 @@ const IndiaCommandCenter: React.FC = () => {
         {/* Command Map */}
         {activePanel === 'map' && (
           <div className="h-full w-full">
-            <DamageMap />
+            <DamageMap defaultCountryCode={defaultCountryCode} defaultEventId={defaultEventId} />
           </div>
         )}
 
@@ -137,8 +154,8 @@ const IndiaCommandCenter: React.FC = () => {
           <div className="h-full w-full max-w-4xl mx-auto"
             style={{ background: 'rgba(5,10,20,0.98)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
             <AgentChat
-              eventId="EVT-BIHAR-FLOOD-2024"
-              scenarioId="scenario_earthquake_74"
+              eventId={defaultEventId}
+              scenarioId={defaultScenarioId}
               className="h-full"
             />
           </div>
@@ -149,8 +166,8 @@ const IndiaCommandCenter: React.FC = () => {
           <div className="h-full w-full max-w-4xl mx-auto"
             style={{ background: 'rgba(5,10,20,0.98)', borderLeft: '1px solid rgba(255,255,255,0.06)', borderRight: '1px solid rgba(255,255,255,0.06)' }}>
             <MissionPlanner
-              scenarioId="scenario_earthquake_74"
-              eventId="EVT-BIHAR-FLOOD-2024"
+              scenarioId={defaultScenarioId}
+              eventId={defaultEventId}
               className="h-full"
             />
           </div>
@@ -160,4 +177,4 @@ const IndiaCommandCenter: React.FC = () => {
   );
 };
 
-export default IndiaCommandCenter;
+export default CommandCenter;

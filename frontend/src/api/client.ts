@@ -153,21 +153,41 @@ export const runFullStackPipeline = async (params?: {
 };
 
 // ==========================================
-// PAN-INDIA GEOGRAPHIC & DISASTER API
+// MULTI-COUNTRY GEOGRAPHIC & DISASTER API
+// Supports: India (IN) and Nepal (NP)
 // ==========================================
 
-export const getRegions = async () => {
-  const res = await api.get('/geo/regions');
+export const getCountries = async () => {
+  const res = await api.get('/geo/countries');
   return res.data;
 };
 
-export const getStates = async () => {
-  const res = await api.get('/geo/states');
+export const getCountryBoundary = async (countryCode: string) => {
+  const res = await api.get(`/geo/countries/${countryCode}/boundary`);
   return res.data;
 };
 
-export const getStateDistricts = async (stateId: string) => {
-  const res = await api.get(`/geo/states/${stateId}/districts`);
+export const getRegions = async (countryCode?: string) => {
+  const params = new URLSearchParams();
+  if (countryCode) params.append('country_code', countryCode);
+  const qs = params.toString();
+  const res = await api.get(`/geo/regions${qs ? '?' + qs : ''}`);
+  return res.data;
+};
+
+export const getStates = async (countryCode?: string) => {
+  const params = new URLSearchParams();
+  if (countryCode) params.append('country_code', countryCode);
+  const qs = params.toString();
+  const res = await api.get(`/geo/states${qs ? '?' + qs : ''}`);
+  return res.data;
+};
+
+export const getStateDistricts = async (stateId: string, countryCode?: string) => {
+  const params = new URLSearchParams();
+  if (countryCode) params.append('country_code', countryCode);
+  const qs = params.toString();
+  const res = await api.get(`/geo/states/${stateId}/districts${qs ? '?' + qs : ''}`);
   return res.data;
 };
 
@@ -176,10 +196,11 @@ export const getDisasterTypes = async () => {
   return res.data;
 };
 
-export const getDisasters = async (stateId?: string, disasterType?: string) => {
+export const getDisasters = async (stateId?: string, disasterType?: string, countryCode?: string) => {
   const params = new URLSearchParams();
   if (stateId) params.append('state_id', stateId);
   if (disasterType) params.append('disaster_type', disasterType);
+  if (countryCode) params.append('country_code', countryCode);
   const qs = params.toString();
   const res = await api.get(`/geo/disasters${qs ? '?' + qs : ''}`);
   return res.data;
@@ -204,6 +225,22 @@ export const getBuildingEvidence = async (buildingId: string) => {
   const res = await api.get(`/geo/buildings/${buildingId}/evidence`);
   return res.data;
 };
+
+export const getEventOsmFootprints = async (eventId: string) => {
+  const res = await api.get(`/geo/events/${eventId}/osm-footprints`);
+  return res.data;
+};
+
+export const getEventFloodExtent = async (eventId: string) => {
+  const res = await api.get(`/geo/events/${eventId}/flood-extent`);
+  return res.data;
+};
+
+export const getEventOsmRoads = async (eventId: string) => {
+  const res = await api.get(`/geo/events/${eventId}/osm-roads`);
+  return res.data;
+};
+
 
 // ==========================================
 // AI DECISION SUPPORT API

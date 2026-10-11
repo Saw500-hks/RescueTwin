@@ -72,19 +72,24 @@ const DropZone = ({ label, sublabel, tag, icon: Icon, file, accentColor, getRoot
     </div>
 
     {file ? (
-      <div className="relative z-10 text-center w-full max-w-[240px]">
-        <div
-          className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg"
-          style={{ background: `${accentColor}25`, border: `1.5px solid ${accentColor}60`, boxShadow: `0 0 20px ${accentColor}40` }}
-        >
-          <FileImage style={{ width: '28px', height: '28px', color: accentColor }} />
+      <div className="relative z-10 text-center w-full max-w-[260px]">
+        {/* Photo Image Preview Thumbnail */}
+        <div className="relative w-44 h-28 rounded-xl overflow-hidden mx-auto mb-3 border border-white/20 shadow-xl bg-black/60">
+          <img
+            src={URL.createObjectURL(file)}
+            alt={file.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-1 right-1.5 px-1.5 py-0.5 rounded bg-black/80 font-mono text-[9px] text-[#00E5FF] font-bold">
+            SATELLITE PASS
+          </div>
         </div>
-        <p className="text-[14px] font-bold text-white mb-1 truncate">{file.name}</p>
+        <p className="text-[13px] font-bold text-white mb-0.5 truncate">{file.name}</p>
         <p className="text-[11px] font-mono text-[#00E5FF]">{(file.size / 1024 / 1024).toFixed(2)} MB · READY</p>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onClear(); }}
-          className="mt-4 inline-flex items-center gap-1 text-[11px] text-[#9CA3AF] hover:text-white px-3 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.12] transition-colors"
+          className="mt-3 inline-flex items-center gap-1 text-[11px] text-[#9CA3AF] hover:text-white px-3 py-1 rounded-md bg-white/[0.06] hover:bg-white/[0.12] transition-colors"
         >
           <X style={{ width: '12px', height: '12px' }} /> Replace Image
         </button>
@@ -167,6 +172,22 @@ const Upload = () => {
 
   const canProceed = mode === 'quick' ? (!!preFile && !!postFile) : multiFiles.length > 0;
 
+  const handleLoadFloodSample = async () => {
+    try {
+      const [preRes, postRes] = await Promise.all([
+        fetch('/assets/pre_disaster.jpg'),
+        fetch('/assets/nepal_flood_hospital.jpg'),
+      ]);
+      const preBlob = await preRes.blob();
+      const postBlob = await postRes.blob();
+      setPreFile(new File([preBlob], 'flood_incident_pre_baseline.jpg', { type: 'image/jpeg' }));
+      setPostFile(new File([postBlob], 'flood_incident_post_target.jpg', { type: 'image/jpeg' }));
+      setMode('quick');
+    } catch (e) {
+      console.error('Failed to load sample imagery', e);
+    }
+  };
+
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto space-y-6">
       {/* Top Header */}
@@ -199,29 +220,41 @@ const Upload = () => {
 
       {!processing ? (
         <>
-          {/* Analysis Mode Selector */}
-          <div className="flex flex-wrap gap-2 p-1.5 rounded-xl bg-[#090F1F]/90 border border-white/[0.08] w-fit">
-            {([
-              { id: 'quick', label: 'Dual-Pass Analysis', desc: 'Pre + Post Pair Assessment', icon: Zap },
-              { id: 'reconstruction', label: 'Multi-View 3D Twin', desc: 'Photogrammetric Dense Mesh', icon: Layers },
-            ] as const).map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setMode(m.id)}
-                className={clsx(
-                  'flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all duration-200 cursor-pointer',
-                  mode === m.id
-                    ? 'bg-gradient-to-r from-[#00E5FF] to-[#0099FF] text-[#050811] shadow-[0_0_20px_rgba(0,229,255,0.4)]'
-                    : 'text-[#8A99AD] hover:text-white hover:bg-white/[0.04]'
-                )}
-              >
-                <m.icon className="w-4 h-4" />
-                <span>{m.label}</span>
-                <span className={clsx('text-[10px] hidden sm:inline', mode === m.id ? 'opacity-80' : 'opacity-50')}>
-                  · {m.desc}
-                </span>
-              </button>
-            ))}
+          {/* Analysis Mode Selector & Flood Demo Quick Load */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2 p-1.5 rounded-xl bg-[#090F1F]/90 border border-white/[0.08] w-fit">
+              {([
+                { id: 'quick', label: 'Dual-Pass Analysis', desc: 'Pre + Post Pair Assessment', icon: Zap },
+                { id: 'reconstruction', label: 'Multi-View 3D Twin', desc: 'Photogrammetric Dense Mesh', icon: Layers },
+              ] as const).map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setMode(m.id)}
+                  className={clsx(
+                    'flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-xs md:text-sm font-semibold transition-all duration-200 cursor-pointer',
+                    mode === m.id
+                      ? 'bg-gradient-to-r from-[#00E5FF] to-[#0099FF] text-[#050811] shadow-[0_0_20px_rgba(0,229,255,0.4)]'
+                      : 'text-[#8A99AD] hover:text-white hover:bg-white/[0.04]'
+                  )}
+                >
+                  <m.icon className="w-4 h-4" />
+                  <span>{m.label}</span>
+                  <span className={clsx('text-[10px] hidden sm:inline', mode === m.id ? 'opacity-80' : 'opacity-50')}>
+                    · {m.desc}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Quick Demo Sample Loader */}
+            <button
+              onClick={handleLoadFloodSample}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-500/15 via-orange-500/10 to-amber-500/15 border border-red-500/35 hover:border-red-500/70 text-white text-xs font-semibold transition-all cursor-pointer shadow-[0_0_20px_rgba(239,68,68,0.2)] hover:scale-105"
+              title="Click to automatically load pre & post disaster satellite passes"
+            >
+              <span className="w-2 h-2 rounded-full bg-red-400 animate-ping" />
+              <span>⚡ Load Inundation Incident Sample (Pre & Post Passes)</span>
+            </button>
           </div>
 
           {/* Main Drop Surface */}

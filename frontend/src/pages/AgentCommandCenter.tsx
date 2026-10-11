@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Cpu, Zap, ShieldAlert, Activity, CheckCircle2, ChevronRight,
   Terminal, Compass, AlertTriangle, ArrowRight, Layers, Box,
@@ -39,6 +39,7 @@ const AgentCommandCenter: React.FC = () => {
   // Execution state
   const [running, setRunning] = useState<boolean>(false);
   const [activeStageIndex, setActiveStageIndex] = useState<number>(0);
+  const [allActivated, setAllActivated] = useState<boolean>(false);
   const [thoughts, setThoughts] = useState<AgentThought[]>([]);
   const [toolCalls, setToolCalls] = useState<ToolCallRecord[]>([]);
   const [rescuePlan, setRescuePlan] = useState<ActionableRescuePlan | null>(null);
@@ -46,7 +47,53 @@ const AgentCommandCenter: React.FC = () => {
   const [selectedToolDetails, setSelectedToolDetails] = useState<ToolCallRecord | null>(null);
   const [showArchitectureModal, setShowArchitectureModal] = useState<boolean>(false);
 
-  // Load initial data
+  // Run the full autonomous mission
+  const handleExecuteMission = useCallback(async (customDirs?: string | unknown) => {
+    const dirs = typeof customDirs === 'string' ? customDirs : undefined;
+    setRunning(true);
+    setThoughts([]);
+    setToolCalls([]);
+    setRescuePlan(null);
+    setAllActivated(false);
+    setActiveStageIndex(1); // CV / 3D Analysis
+
+    try {
+      // Step animation sequence through pipeline stages
+      const stageTimer1 = setTimeout(() => setActiveStageIndex(2), 350);  // Evidence Store
+      const stageTimer2 = setTimeout(() => setActiveStageIndex(3), 700);  // NVIDIA Nemotron
+      const stageTimer3 = setTimeout(() => setActiveStageIndex(4), 1050); // RescueTwin Agent
+      const stageTimer4 = setTimeout(() => setActiveStageIndex(5), 1400); // Reasoning + Tools
+
+      const res: AgentRunResponse = await runAutonomousAgent({
+        scenario_id: selectedScenarioId,
+        custom_directives: (dirs !== undefined ? dirs : customDirectives).trim() || undefined,
+        use_live_nim: true
+      });
+
+      clearTimeout(stageTimer1);
+      clearTimeout(stageTimer2);
+      clearTimeout(stageTimer3);
+      clearTimeout(stageTimer4);
+
+      setActiveStageIndex(6); // Actionable Rescue Plan
+      setTimeout(() => {
+        setActiveStageIndex(7); // 3D Command Dashboard
+        setAllActivated(true);
+      }, 300);
+
+      if (res) {
+        setThoughts(res.thoughts || []);
+        setToolCalls(res.tool_calls || []);
+        setRescuePlan(res.rescue_plan || null);
+      }
+    } catch (err) {
+      console.error('Failed to run mission:', err);
+    } finally {
+      setRunning(false);
+    }
+  }, [selectedScenarioId, customDirectives]);
+
+  // Load initial data and auto-activate all stages
   useEffect(() => {
     const init = async () => {
       try {
@@ -58,12 +105,14 @@ const AgentCommandCenter: React.FC = () => {
         if (stat) setAgentStatus(stat);
         if (scens && scens.length > 0) setScenarios(scens);
         if (evd && evd.length > 0) setEvidence(evd);
+        // Automatically activate and execute all pipeline stages on initial mount
+        handleExecuteMission();
       } catch (err) {
         console.error('Agent initialization error:', err);
       }
     };
     init();
-  }, []);
+  }, [handleExecuteMission]);
 
   // Update evidence when scenario changes
   const handleScenarioChange = async (scenId: string) => {
@@ -73,47 +122,6 @@ const AgentCommandCenter: React.FC = () => {
       setEvidence(evd);
     } catch (err) {
       console.error(err);
-    }
-  };
-
-  // Run the full autonomous mission
-  const handleExecuteMission = async () => {
-    setRunning(true);
-    setThoughts([]);
-    setToolCalls([]);
-    setRescuePlan(null);
-    setActiveStageIndex(1); // CV / 3D Analysis
-
-    try {
-      // Step animation sequence through pipeline stages
-      const stageTimer1 = setTimeout(() => setActiveStageIndex(2), 600);  // Evidence Store
-      const stageTimer2 = setTimeout(() => setActiveStageIndex(3), 1200); // NVIDIA Nemotron
-      const stageTimer3 = setTimeout(() => setActiveStageIndex(4), 1800); // RescueTwin Agent
-      const stageTimer4 = setTimeout(() => setActiveStageIndex(5), 2400); // Reasoning + Tools
-
-      const res: AgentRunResponse = await runAutonomousAgent({
-        scenario_id: selectedScenarioId,
-        custom_directives: customDirectives.trim() || undefined,
-        use_live_nim: true
-      });
-
-      clearTimeout(stageTimer1);
-      clearTimeout(stageTimer2);
-      clearTimeout(stageTimer3);
-      clearTimeout(stageTimer4);
-
-      setActiveStageIndex(6); // Actionable Rescue Plan
-      setTimeout(() => setActiveStageIndex(7), 400); // 3D Command Dashboard
-
-      if (res) {
-        setThoughts(res.thoughts || []);
-        setToolCalls(res.tool_calls || []);
-        setRescuePlan(res.rescue_plan || null);
-      }
-    } catch (err) {
-      console.error('Failed to run mission:', err);
-    } finally {
-      setRunning(false);
     }
   };
 
@@ -143,6 +151,15 @@ const AgentCommandCenter: React.FC = () => {
 
         {/* Action Controls & Nebius / NVIDIA NIM Model Telemetry Card */}
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => handleExecuteMission()}
+            disabled={running}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[#00E5FF] via-[#00A3FF] to-[#76B900] hover:opacity-95 text-black font-mono text-xs font-extrabold transition-all cursor-pointer shadow-[0_0_25px_rgba(0,229,255,0.4)] disabled:opacity-50"
+          >
+            <Zap className="w-4 h-4 fill-black" />
+            <span>{running ? 'Activating All Stages...' : (allActivated ? 'Re-activate All Stages' : 'Activate All Stages')}</span>
+          </button>
+
           <button
             onClick={() => setShowArchitectureModal(true)}
             className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-[#00E5FF]/10 hover:bg-[#00E5FF]/20 border border-[#00E5FF]/30 text-white font-mono text-xs font-bold transition-all cursor-pointer shadow-[0_0_15px_rgba(0,229,255,0.15)] hover:border-[#00E5FF]/60"
@@ -178,14 +195,31 @@ const AgentCommandCenter: React.FC = () => {
           VISUAL ARCHITECTURE PIPELINE FLOW (MATCHING SPEC)
          ======================================================== */}
       <div className="p-4 md:p-5 rounded-2xl bg-gradient-to-r from-[#070D1B] via-[#091124] to-[#070D1B] border border-white/[0.08] shadow-2xl relative overflow-hidden">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#00E5FF] flex items-center gap-2">
-            <Activity className="w-3.5 h-3.5 text-[#00E5FF] animate-pulse" />
-            END-TO-END AUTONOMOUS AGENT WORKFLOW
-          </span>
-          <span className="text-[11px] font-mono text-slate-400">
-            Current Stage: <span className="text-white font-bold">{PIPELINE_STAGES[activeStageIndex]?.label}</span>
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#00E5FF] flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-[#00E5FF] animate-pulse" />
+              END-TO-END AUTONOMOUS AGENT WORKFLOW
+            </span>
+            {allActivated && (
+              <span className="px-2.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 shadow-[0_0_12px_rgba(16,185,129,0.35)]">
+                <CheckCircle2 className="w-3 h-3 text-emerald-400" /> ALL 8 STAGES ACTIVE
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleExecuteMission()}
+              disabled={running}
+              className="px-3 py-1.5 rounded-xl text-[10px] font-mono font-bold bg-gradient-to-r from-[#00E5FF]/20 via-[#00A3FF]/20 to-[#76B900]/20 hover:from-[#00E5FF]/30 hover:to-[#76B900]/30 border border-[#00E5FF]/50 text-[#00E5FF] flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(0,229,255,0.25)] cursor-pointer"
+            >
+              <Zap className="w-3.5 h-3.5 text-[#76B900]" />
+              <span>{running ? 'Running Nemotron...' : (allActivated ? 'Re-activate All' : 'Activate All Stages')}</span>
+            </button>
+            <span className="text-[11px] font-mono text-slate-400">
+              Current Stage: <span className="text-white font-bold">{PIPELINE_STAGES[activeStageIndex]?.label}</span>
+            </span>
+          </div>
         </div>
 
         {/* Flowchart Nodes Grid */}
@@ -193,26 +227,28 @@ const AgentCommandCenter: React.FC = () => {
           {PIPELINE_STAGES.map((stg, idx) => {
             const Icon = stg.icon;
             const isActive = activeStageIndex === idx;
-            const isCompleted = activeStageIndex > idx;
+            const isCompleted = allActivated || activeStageIndex > idx;
 
             return (
-              <div
+              <button
+                type="button"
                 key={stg.id}
+                onClick={() => setActiveStageIndex(idx)}
                 className={clsx(
-                  'flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-300 relative group cursor-default',
+                  'flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all duration-300 relative group cursor-pointer',
                   isActive
-                    ? 'bg-[#00E5FF]/15 border-[#00E5FF] shadow-[0_0_20px_rgba(0,229,255,0.4)] scale-[1.03]'
+                    ? 'bg-[#00E5FF]/20 border-[#00E5FF] shadow-[0_0_25px_rgba(0,229,255,0.45)] scale-[1.04]'
                     : isCompleted
-                    ? 'bg-emerald-950/20 border-emerald-500/40 text-emerald-400'
-                    : 'bg-white/[0.02] border-white/[0.06] text-slate-400 opacity-70'
+                    ? 'bg-emerald-950/30 border-emerald-500/50 text-emerald-300 hover:border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
+                    : 'bg-white/[0.02] border-white/[0.06] text-slate-400 opacity-70 hover:opacity-100 hover:border-white/20'
                 )}
               >
                 {/* Step badge */}
                 <span className={clsx(
-                  'text-[9px] font-mono font-extrabold px-1.5 py-0.2 rounded mb-1.5',
+                  'text-[9px] font-mono font-extrabold px-1.5 py-0.2 rounded mb-1.5 flex items-center gap-1',
                   isActive ? 'bg-[#00E5FF] text-black' : isCompleted ? 'bg-emerald-500 text-black' : 'bg-white/10 text-slate-400'
                 )}>
-                  0{idx + 1}
+                  {isCompleted && <CheckCircle2 className="w-2.5 h-2.5 inline" />} 0{idx + 1}
                 </span>
 
                 <div className={clsx(
@@ -222,12 +258,17 @@ const AgentCommandCenter: React.FC = () => {
                   <Icon className="w-4 h-4" />
                 </div>
 
-                <div className={clsx('text-[11px] font-bold leading-tight', isActive ? 'text-white' : 'text-slate-300')}>
+                <div className={clsx('text-[11px] font-bold leading-tight', isActive ? 'text-white' : isCompleted ? 'text-emerald-200' : 'text-slate-300')}>
                   {stg.label}
                 </div>
                 <div className="text-[9px] text-slate-500 mt-1 line-clamp-2 hidden xl:block">
                   {stg.desc}
                 </div>
+                {allActivated && (
+                  <div className="text-[8.5px] font-mono font-extrabold text-emerald-400 mt-1 uppercase tracking-wider">
+                    ● ACTIVE
+                  </div>
+                )}
 
                 {/* Connecting arrow for larger screens */}
                 {idx < PIPELINE_STAGES.length - 1 && (
@@ -235,7 +276,7 @@ const AgentCommandCenter: React.FC = () => {
                     →
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -362,7 +403,7 @@ const AgentCommandCenter: React.FC = () => {
           {/* Trigger Action */}
           <div className="lg:col-span-3 flex items-end">
             <button
-              onClick={handleExecuteMission}
+              onClick={() => handleExecuteMission()}
               disabled={running}
               className={clsx(
                 'w-full py-2.5 px-4 rounded-xl font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer',

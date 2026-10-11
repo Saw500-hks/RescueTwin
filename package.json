@@ -4,10 +4,26 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
-    "preview": "npm --prefix frontend run preview"
+    "build": "cd frontend && npm install && npm run build",
+    "preview": "npm --prefix frontend run preview",
+    "install-frontend": "npm --prefix frontend install"
   },
   "dependencies": {
+    "@prisma/client": "^7.10.0",
+    "@supabase/server": "^1.9.1",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.117.2",
     "lucide-react": "^1.48.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "next": "^16.4.0",
+    "prisma": "^8.0.0-rc.20",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.2"
   }
 }

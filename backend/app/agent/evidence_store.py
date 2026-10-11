@@ -477,6 +477,102 @@ class EvidenceStore:
         ]
         self._evidence[scen3_id] = {b.building_id: b for b in bldgs3}
 
+        # Scenario 4: Nepal Koshi River Flash Flood — Hospital Scour & Collapse
+        scen4_id = "scenario_nepal_flood_2024"
+        self._scenarios[scen4_id] = DisasterScenario(
+            scenario_id=scen4_id,
+            title="Nepal Monsoon Flash Flood — Koshi Basin Healthcare Emergency",
+            disaster_type="FLOOD",
+            location="Sunsari District, Koshi Province, Nepal",
+            center_lat=26.6455,
+            center_lng=87.1742,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            total_structures=4,
+            critical_structures=2,
+            estimated_trapped=73,
+            weather_condition="Monsoon Torrential Rain, 22°C, River Flow 4,800 m³/s",
+            golden_window_hours_left=14.5,
+            description="Embankment breach along the Koshi River caused catastrophic 2.8m deep inundation, scouring foundations and collapsing the emergency hospital block with road access completely severed."
+        )
+        bldgs4 = [
+            EvidenceItem(
+                id="EVD-NP-001",
+                building_id="NP-HOSP-01",
+                name="Sunsari District Emergency Hospital (Trauma Block)",
+                damage_level="DESTROYED",
+                confidence=0.98,
+                lat=26.6455,
+                lng=87.1742,
+                elevation_m=72.0,
+                area_sqm=2450.0,
+                building_area=2450.0,
+                damage_score=0.98,
+                estimated_victims=45,
+                victim_confidence=0.95,
+                debris_density=0.98,
+                road_access=False,
+                road_access_ratio=0.0,
+                road_blockage_pct=100.0,
+                change_score=0.95,
+                hazards=[
+                    "100% structural foundation scour and pancake collapse of east surgical block",
+                    "Flood inundation depth > 2.8 meters detected by SAR Sentinel-1",
+                    "Submerged oxygen cylinders and medical bio-hazard",
+                    "Arterial access bridge washed away"
+                ],
+                structural_change_pct=95.0,
+                evidence=[
+                    "100% structural scour and collapse of east surgical block",
+                    "Flood inundation depth > 2.8m detected by SAR Sentinel-1",
+                    "Emergency generator and basement ICU completely submerged",
+                    "Primary bridge & arterial access corridor severed by flood debris",
+                    "Pre/post radiometric loss: 95% structural change"
+                ],
+                priority="CRITICAL_P1",
+                recommended_action="Urgent air-hoist evacuation via Nepal Army helicopter + amphibious rescue squad",
+                reason="Complete hospital destruction with ~45 patients and trauma medics stranded with no road ingress",
+                aftershock_collapse_risk=0.98,
+                status="CRITICAL_LIFE_SAFETY"
+            ),
+            EvidenceItem(
+                id="EVD-NP-002",
+                building_id="NP-MED-02",
+                name="District Vaccine & Medical Supply Cold Storage",
+                damage_level="MAJOR",
+                confidence=0.91,
+                lat=26.6438,
+                lng=87.1720,
+                elevation_m=73.0,
+                area_sqm=1120.0,
+                building_area=1120.0,
+                damage_score=0.88,
+                estimated_victims=8,
+                victim_confidence=0.88,
+                debris_density=0.65,
+                road_access=False,
+                road_access_ratio=0.15,
+                road_blockage_pct=85.0,
+                change_score=0.79,
+                hazards=[
+                    "Perimeter wall collapsed",
+                    "Ground floor submerged 1.8m",
+                    "Electrical short-circuit risk"
+                ],
+                structural_change_pct=79.0,
+                evidence=[
+                    "Perimeter wall collapsed",
+                    "Ground floor submerged 1.8m",
+                    "Roof structural deflection under silt load"
+                ],
+                priority="HIGH",
+                recommended_action="Deploy de-watering pumps and amphibious cargo unit for cold-chain salvage",
+                reason="Major structural flooding endangering regional insulin and antivenom stockpiles",
+                aftershock_collapse_risk=0.82,
+                status="CRITICAL_INFRASTRUCTURE"
+            )
+        ]
+        self._evidence[scen4_id] = {b.building_id: b for b in bldgs4}
+
     def get_scenario(self, scenario_id: str) -> Optional[DisasterScenario]:
         return self._scenarios.get(scenario_id)
 
@@ -501,6 +597,12 @@ class EvidenceStore:
         for b_id, item in scenario_ev.items():
             if b_id.replace("-", "").replace("_", "").replace(" ", "").upper() == norm:
                 return item
+        # Cross-scenario fallback: check all scenarios so Nepal hospital or any building is found
+        for scen_id, items in self._evidence.items():
+            if scen_id != scenario_id:
+                for b_id, item in items.items():
+                    if b_id.replace("-", "").replace("_", "").replace(" ", "").upper() == norm:
+                        return item
         return None
 
     def add_evidence(self, scenario_id: str, item: EvidenceItem):

@@ -2,20 +2,19 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, UploadCloud, BarChart2, Box, AlertTriangle,
-  Building2, ShieldAlert, Activity, Map, FileDown, Layers, Target, Compass, Cpu, Globe
+  Building2, ShieldAlert, Activity, Map, FileDown, Layers, Target, Compass, Cpu, Globe, Database
 } from 'lucide-react';
 import useStore from '../../stores/useStore';
 import clsx from 'clsx';
 
 const navItems = [
-  { to: '/', label: 'Home', icon: LayoutDashboard, end: true },
-  { to: '/india', label: 'India Command', icon: Globe, badge: 'NEW' },
+  { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/map', label: 'Command Map', icon: Map, badge: 'Unified' },
   { to: '/agent', label: 'AI Commander', icon: Cpu, badge: 'Nemotron' },
-  { to: '/map', label: 'Live Map', icon: Map },
-  { to: '/upload', label: 'Analysis', icon: UploadCloud },
-  { to: '/analysis', label: 'Results', icon: BarChart2 },
-  { to: '/viewer', label: '3D Twin', icon: Box },
+  { to: '/analysis', label: 'Damage Analysis', icon: BarChart2 },
+  { to: '/viewer', label: '3D Digital Twin', icon: Box },
   { to: '/priority', label: 'Priority Report', icon: AlertTriangle },
+  { to: '/todos', label: 'Supabase Data', icon: Database },
 ];
 
 const damageLegend = [
@@ -74,7 +73,11 @@ const Sidebar = () => {
                 {item.badge && (
                   <span className={clsx(
                     'ml-1.5 px-1.5 py-0.2 rounded text-[8px] font-mono font-extrabold uppercase tracking-wider border',
-                    item.badge === 'NEW'
+                    item.badge === 'HISTORICAL'
+                      ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
+                      : item.badge === 'DEMO'
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                      : item.badge === 'NEW'
                       ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
                       : 'bg-[#76B900]/20 text-[#76B900] border-[#76B900]/30'
                   )}>
@@ -159,22 +162,13 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* Footer quick action buttons */}
-      <div className="p-3 mt-auto border-t border-white/[0.06] space-y-1.5">
-        <button
-          onClick={() => navigate('/map')}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#94A3B8] hover:text-white hover:bg-[#00E5FF]/10 hover:border-[#00E5FF]/25 border border-transparent transition-all cursor-pointer"
-        >
-          <Map className="w-3.5 h-3.5 text-[#00E5FF]" />
-          <span>Open Live Map</span>
-        </button>
-        <button
-          onClick={() => navigate('/priority')}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[12px] font-semibold text-[#94A3B8] hover:text-white hover:bg-white/[0.05] border border-transparent transition-all cursor-pointer"
-        >
-          <FileDown className="w-3.5 h-3.5 text-[#FF8A3D]" />
-          <span>Priority Action Plan</span>
-        </button>
+      {/* Compact footer info */}
+      <div className="p-3 mt-auto border-t border-white/[0.06] flex items-center justify-between text-[10px] text-slate-500 font-mono">
+        <span className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span>v1.0 Operational</span>
+        </span>
+        <span>RescueTwin</span>
       </div>
     </aside>
   );

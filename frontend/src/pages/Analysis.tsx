@@ -7,10 +7,11 @@ import {
   Download, Filter, SlidersHorizontal, ChevronUp, ChevronDown,
   ArrowRight, Satellite, Box, ExternalLink, ShieldAlert,
   Layers, CheckCircle2, AlertTriangle, Crosshair, Sparkles,
-  Search, RefreshCw
+  Search, RefreshCw, UploadCloud, BarChart2
 } from 'lucide-react';
 import clsx from 'clsx';
 import { AiAssessmentModal } from '../components/AiAssessmentModal';
+import Upload from './Upload';
 
 const damageData = [
   { name: 'No Damage', count: 766, color: '#22C55E', pct: 61.4 },
@@ -248,8 +249,13 @@ const SatelliteDamageWorkspace = ({ mode, onOpen3D }: { mode: 'pre' | 'post'; on
   );
 };
 
-const Analysis = () => {
+interface AnalysisProps {
+  defaultTab?: 'results' | 'upload';
+}
+
+const Analysis: React.FC<AnalysisProps> = ({ defaultTab = 'results' }) => {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'results' | 'upload'>(defaultTab);
   const [sortCol, setSortCol] = useState<string>('rank');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [filterLevel, setFilterLevel] = useState<string>('ALL');
@@ -280,7 +286,39 @@ const Analysis = () => {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      {/* Tactical Mission Header */}
+      {/* Consolidated Module Switcher */}
+      <div className="flex items-center gap-2 p-1 bg-[#070B16] border border-white/[0.08] rounded-xl w-fit">
+        <button
+          onClick={() => setActiveTab('results')}
+          className={clsx(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
+            activeTab === 'results'
+              ? "bg-gradient-to-r from-[#00E5FF]/20 to-[#0077FE]/20 text-[#00E5FF] border border-[#00E5FF]/40 shadow-sm"
+              : "text-[#8A99AD] hover:text-white"
+          )}
+        >
+          <BarChart2 className="w-3.5 h-3.5" />
+          Assessment Results & Analytics
+        </button>
+        <button
+          onClick={() => setActiveTab('upload')}
+          className={clsx(
+            "flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer",
+            activeTab === 'upload'
+              ? "bg-gradient-to-r from-[#00E5FF]/20 to-[#0077FE]/20 text-[#00E5FF] border border-[#00E5FF]/40 shadow-sm"
+              : "text-[#8A99AD] hover:text-white"
+          )}
+        >
+          <UploadCloud className="w-3.5 h-3.5" />
+          Imagery Ingestion & Pipeline
+        </button>
+      </div>
+
+      {activeTab === 'upload' ? (
+        <Upload />
+      ) : (
+        <>
+          {/* Tactical Mission Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-2">
@@ -672,6 +710,8 @@ const Analysis = () => {
         onClose={() => setShowAiModal(false)}
         buildingId={selectedBuildingId}
       />
+        </>
+      )}
     </div>
   );
 };

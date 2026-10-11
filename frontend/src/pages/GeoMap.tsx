@@ -84,30 +84,90 @@ export interface GeoLocationSite {
   timestamp: string;
 }
 
-// Preset regions (India States & Districts + Global Disaster Hotspots)
+// Preset regions (All 28 Indian States + 8 Union Territories + Disaster Hotspots)
 const PRESET_REGIONS = [
+  // ── 28 Indian States ──
+  { state: 'Andhra Pradesh', district: 'Visakhapatnam (Cyclone Corridor)', lat: 17.6868, lng: 83.2185, zoom: 12 },
+  { state: 'Andhra Pradesh', district: 'Godavari Basin (Flood Plain)', lat: 16.9097, lng: 81.3397, zoom: 11 },
+  { state: 'Arunachal Pradesh', district: 'Tawang (High-Altitude Seismic Zone)', lat: 27.5861, lng: 91.8594, zoom: 12 },
+  { state: 'Arunachal Pradesh', district: 'Itanagar Capital Region', lat: 27.0844, lng: 93.6053, zoom: 12 },
+  { state: 'Assam', district: 'Cachar (Silchar Flood Plain)', lat: 24.8333, lng: 92.7789, zoom: 13 },
+  { state: 'Assam', district: 'Guwahati (Brahmaputra Basin)', lat: 26.1445, lng: 91.7362, zoom: 12 },
+  { state: 'Bihar', district: 'Patna (Ganga River Basin)', lat: 25.5941, lng: 85.1376, zoom: 13 },
+  { state: 'Bihar', district: 'Darbhanga (Kosi Flood Belt)', lat: 26.1542, lng: 85.8918, zoom: 12 },
+  { state: 'Chhattisgarh', district: 'Bastar (Forest Terrain)', lat: 19.1071, lng: 81.9535, zoom: 11 },
+  { state: 'Chhattisgarh', district: 'Raipur Central District', lat: 21.2514, lng: 81.6296, zoom: 12 },
+  { state: 'Goa', district: 'North Goa (Panaji Coastal Zone)', lat: 15.4909, lng: 73.8278, zoom: 13 },
+  { state: 'Goa', district: 'South Goa (Zuari Basin)', lat: 15.2736, lng: 73.9580, zoom: 12 },
+  { state: 'Gujarat', district: 'Kutch (Bhuj Fault Zone)', lat: 23.2420, lng: 69.6669, zoom: 12 },
+  { state: 'Gujarat', district: 'Ahmedabad Urban Zone', lat: 23.0225, lng: 72.5714, zoom: 12 },
+  { state: 'Gujarat', district: 'Surat (Tapi Coastal Zone)', lat: 21.1702, lng: 72.8311, zoom: 12 },
+  { state: 'Haryana', district: 'Gurugram (NCR Urban Core)', lat: 28.4595, lng: 77.0266, zoom: 12 },
+  { state: 'Haryana', district: 'Ambala (Flood Plain)', lat: 30.3782, lng: 76.7767, zoom: 12 },
+  { state: 'Himachal Pradesh', district: 'Mandi (Flash Flood Zone)', lat: 31.7087, lng: 76.9320, zoom: 13 },
+  { state: 'Himachal Pradesh', district: 'Kullu & Manali (Valley Corridor)', lat: 31.9579, lng: 77.1095, zoom: 12 },
+  { state: 'Himachal Pradesh', district: 'Shimla Ridge', lat: 31.1048, lng: 77.1734, zoom: 13 },
+  { state: 'Jharkhand', district: 'Ranchi Plateau', lat: 23.3441, lng: 85.3096, zoom: 12 },
+  { state: 'Jharkhand', district: 'Dhanbad Mining Corridor', lat: 23.7957, lng: 86.4304, zoom: 12 },
+  { state: 'Karnataka', district: 'Kodagu / Coorg (Landslide Zone)', lat: 12.4244, lng: 75.7382, zoom: 12 },
+  { state: 'Karnataka', district: 'Bengaluru Urban Command', lat: 12.9716, lng: 77.5946, zoom: 12 },
+  { state: 'Karnataka', district: 'Dakshina Kannada (Mangaluru Coastal)', lat: 12.9141, lng: 74.8560, zoom: 12 },
   { state: 'Kerala', district: 'Wayanad (Meppadi Landslide)', lat: 11.5546, lng: 76.1283, zoom: 13 },
-  { state: 'Kerala', district: 'Idukki', lat: 9.8494, lng: 76.9804, zoom: 12 },
-  { state: 'Kerala', district: 'Kozhikode', lat: 11.2588, lng: 75.7804, zoom: 12 },
+  { state: 'Kerala', district: 'Idukki (Western Ghats Dam Spillway)', lat: 9.8494, lng: 76.9804, zoom: 12 },
+  { state: 'Kerala', district: 'Kozhikode Coastal Corridor', lat: 11.2588, lng: 75.7804, zoom: 12 },
+  { state: 'Madhya Pradesh', district: 'Jabalpur (Narmada River Zone)', lat: 23.1815, lng: 79.9864, zoom: 12 },
+  { state: 'Madhya Pradesh', district: 'Bhopal Central Command', lat: 23.2599, lng: 77.4126, zoom: 12 },
   { state: 'Maharashtra', district: 'Mumbai Coastal Area', lat: 18.9220, lng: 72.8347, zoom: 13 },
   { state: 'Maharashtra', district: 'Pune (Ambegaon Zone)', lat: 18.5204, lng: 73.8567, zoom: 12 },
-  { state: 'Maharashtra', district: 'Raigad (Mahad)', lat: 18.0827, lng: 73.4243, zoom: 13 },
-  { state: 'Uttarakhand', district: 'Chamoli (Joshimath)', lat: 30.5574, lng: 79.5664, zoom: 13 },
-  { state: 'Uttarakhand', district: 'Rudraprayag (Kedarnath)', lat: 30.7352, lng: 79.0669, zoom: 13 },
-  { state: 'Himachal Pradesh', district: 'Mandi (Flash Flood Zone)', lat: 31.7087, lng: 76.9320, zoom: 13 },
-  { state: 'Himachal Pradesh', district: 'Kullu', lat: 31.9579, lng: 77.1095, zoom: 12 },
+  { state: 'Maharashtra', district: 'Raigad (Mahad Flood Area)', lat: 18.0827, lng: 73.4243, zoom: 13 },
+  { state: 'Manipur', district: 'Imphal Valley Inundation Zone', lat: 24.8170, lng: 93.9368, zoom: 12 },
+  { state: 'Meghalaya', district: 'East Khasi Hills (Shillong)', lat: 25.5788, lng: 91.8933, zoom: 12 },
+  { state: 'Meghalaya', district: 'Cherrapunji / Sohra (Extreme Monsoon Belt)', lat: 25.2700, lng: 91.7323, zoom: 13 },
+  { state: 'Mizoram', district: 'Aizawl (Steep Slope Landslide Zone)', lat: 23.7271, lng: 92.7176, zoom: 12 },
+  { state: 'Nagaland', district: 'Kohima Ridge (Seismic Zone V)', lat: 25.6751, lng: 94.1086, zoom: 12 },
   { state: 'Odisha', district: 'Puri (Cyclone Corridor)', lat: 19.8135, lng: 85.8312, zoom: 13 },
-  { state: 'Odisha', district: 'Balasore', lat: 21.4934, lng: 86.9135, zoom: 12 },
-  { state: 'Gujarat', district: 'Kutch (Bhuj Fault)', lat: 23.2420, lng: 69.6669, zoom: 12 },
-  { state: 'Assam', district: 'Cachar (Silchar Flood Plain)', lat: 24.8333, lng: 92.7789, zoom: 13 },
-  { state: 'Tamil Nadu', district: 'Chennai (Adyar Basin)', lat: 13.0067, lng: 80.2570, zoom: 13 },
+  { state: 'Odisha', district: 'Balasore Coastal Command', lat: 21.4934, lng: 86.9135, zoom: 12 },
+  { state: 'Punjab', district: 'Amritsar (Ravi River Border Zone)', lat: 31.6340, lng: 74.8723, zoom: 12 },
+  { state: 'Punjab', district: 'Ludhiana (Sutlej Basin)', lat: 30.9010, lng: 75.8573, zoom: 12 },
+  { state: 'Rajasthan', district: 'Jaipur Command Zone', lat: 26.9124, lng: 75.7873, zoom: 12 },
+  { state: 'Rajasthan', district: 'Jodhpur (Thar Desert Heatwave Area)', lat: 26.2389, lng: 73.0243, zoom: 12 },
+  { state: 'Rajasthan', district: 'Barmer (Flash Flood & Drought)', lat: 25.7532, lng: 71.4181, zoom: 11 },
+  { state: 'Sikkim', district: 'Mangan (North Sikkim GLOF Hotspot)', lat: 27.5042, lng: 88.5276, zoom: 12 },
+  { state: 'Sikkim', district: 'Gangtok Valley', lat: 27.3389, lng: 88.6065, zoom: 13 },
+  { state: 'Tamil Nadu', district: 'Chennai (Adyar & Cooum Basin)', lat: 13.0067, lng: 80.2570, zoom: 13 },
+  { state: 'Tamil Nadu', district: 'Nilgiris (Ooty Landslide Corridor)', lat: 11.4102, lng: 76.6950, zoom: 12 },
+  { state: 'Telangana', district: 'Hyderabad (Musi River Flood Basin)', lat: 17.3850, lng: 78.4867, zoom: 12 },
+  { state: 'Telangana', district: 'Bhadrachalam (Godavari Spillway)', lat: 17.6688, lng: 80.8935, zoom: 12 },
+  { state: 'Tripura', district: 'Agartala (Howrah River Plain)', lat: 23.8315, lng: 91.2868, zoom: 13 },
+  { state: 'Uttar Pradesh', district: 'Varanasi (Ganga Basin)', lat: 25.3176, lng: 82.9739, zoom: 13 },
+  { state: 'Uttar Pradesh', district: 'Gorakhpur (Rapti Flood Plain)', lat: 26.7606, lng: 83.3732, zoom: 12 },
+  { state: 'Uttar Pradesh', district: 'Lucknow Central Hub', lat: 26.8467, lng: 80.9462, zoom: 12 },
+  { state: 'Uttarakhand', district: 'Chamoli (Joshimath Subsidence)', lat: 30.5574, lng: 79.5664, zoom: 13 },
+  { state: 'Uttarakhand', district: 'Rudraprayag (Kedarnath Valley)', lat: 30.7352, lng: 79.0669, zoom: 13 },
+  { state: 'West Bengal', district: 'Sundarbans (Cyclone Delta Zone)', lat: 22.1696, lng: 88.7562, zoom: 12 },
+  { state: 'West Bengal', district: 'Kolkata Metropolitan', lat: 22.5726, lng: 88.3639, zoom: 12 },
+  { state: 'West Bengal', district: 'Darjeeling (Himalayan Landslide Zone)', lat: 27.0410, lng: 88.2663, zoom: 13 },
+
+  // ── 8 Indian Union Territories ──
+  { state: 'Andaman and Nicobar', district: 'Port Blair (Tsunami Warning Zone)', lat: 11.6234, lng: 92.7265, zoom: 12 },
+  { state: 'Chandigarh', district: 'Chandigarh Capital Region', lat: 30.7333, lng: 76.7794, zoom: 13 },
+  { state: 'Dadra and Nagar Haveli and Daman and Diu', district: 'Daman Coastal Gateway', lat: 20.4283, lng: 72.8397, zoom: 13 },
   { state: 'Delhi NCR', district: 'Yamuna Floodplain Zone', lat: 28.6139, lng: 77.2090, zoom: 13 },
+  { state: 'Jammu and Kashmir', district: 'Srinagar (Jhelum Basin)', lat: 34.0837, lng: 74.7973, zoom: 13 },
+  { state: 'Jammu and Kashmir', district: 'Jammu Tawi River Basin', lat: 32.7266, lng: 74.8570, zoom: 12 },
+  { state: 'Ladakh', district: 'Leh (Cloudburst & Flash Flood)', lat: 34.1526, lng: 77.5771, zoom: 12 },
+  { state: 'Ladakh', district: 'Kargil Mountain Valley', lat: 34.5539, lng: 76.1349, zoom: 12 },
+  { state: 'Lakshadweep', district: 'Kavaratti (Coral Atoll)', lat: 10.5667, lng: 72.6417, zoom: 13 },
+  { state: 'Puducherry', district: 'Puducherry Coastal Zone', lat: 11.9416, lng: 79.8083, zoom: 13 },
+
+  // ── International Reference Hotspots ──
   { state: 'International', district: 'Hatay / Antakya (Turkey)', lat: 36.2021, lng: 36.1606, zoom: 13 },
   { state: 'International', district: 'Sendai (Japan)', lat: 38.2682, lng: 140.8694, zoom: 13 },
   { state: 'International', district: 'Maui / Lahaina (USA)', lat: 20.8783, lng: -156.6825, zoom: 13 },
 ];
 
 const INITIAL_SITES: GeoLocationSite[] = [
+  // Kerala
   {
     id: 'SITE-KL-01',
     name: 'Chooralmala Primary Hospital & Quarters',
@@ -183,6 +243,7 @@ const INITIAL_SITES: GeoLocationSite[] = [
     status: 'Rescued',
     timestamp: '3 hours ago',
   },
+  // Maharashtra
   {
     id: 'SITE-MH-01',
     name: 'Mahad Industrial Warehouse 4',
@@ -199,6 +260,22 @@ const INITIAL_SITES: GeoLocationSite[] = [
     timestamp: '4 hours ago',
   },
   {
+    id: 'SITE-MH-02',
+    name: 'Mumbai Coastal Storm Surge Terminal',
+    state: 'Maharashtra',
+    district: 'Mumbai Coastal Area',
+    lat: 18.9220,
+    lng: 72.8347,
+    damage: 'MINOR',
+    priorityScore: 65,
+    roadAccess: true,
+    estimatedOccupancy: 35,
+    notes: 'High tide seawater incursion along promenade. Sea pumps running.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Uttarakhand
+  {
     id: 'SITE-UT-01',
     name: 'Joshimath Ward 5 Subsidized Complex',
     state: 'Uttarakhand',
@@ -213,6 +290,549 @@ const INITIAL_SITES: GeoLocationSite[] = [
     status: 'Pending',
     timestamp: '5 hours ago',
   },
+  {
+    id: 'SITE-UT-02',
+    name: 'Kedarnath Shrine Valley Valley Base',
+    state: 'Uttarakhand',
+    district: 'Rudraprayag (Kedarnath)',
+    lat: 30.7352,
+    lng: 79.0669,
+    damage: 'MINOR',
+    priorityScore: 71,
+    roadAccess: false,
+    estimatedOccupancy: 16,
+    notes: 'Glacial stream swelling near lower bridge. Helipad clear.',
+    status: 'Dispatched',
+    timestamp: '2 hours ago',
+  },
+  // Andhra Pradesh
+  {
+    id: 'SITE-AP-01',
+    name: 'Visakhapatnam Harbor Coastal Evacuation Shelter',
+    state: 'Andhra Pradesh',
+    district: 'Visakhapatnam',
+    lat: 17.6868,
+    lng: 83.2185,
+    damage: 'MAJOR',
+    priorityScore: 85,
+    roadAccess: true,
+    estimatedOccupancy: 64,
+    notes: 'Pre-cyclone landfall storm surge. Fishermen colonies evacuated.',
+    status: 'Dispatched',
+    timestamp: '30 mins ago',
+  },
+  // Arunachal Pradesh
+  {
+    id: 'SITE-AR-01',
+    name: 'Tawang Valley High-Pass SAR Post',
+    state: 'Arunachal Pradesh',
+    district: 'Tawang',
+    lat: 27.5861,
+    lng: 91.8594,
+    damage: 'MINOR',
+    priorityScore: 68,
+    roadAccess: false,
+    estimatedOccupancy: 12,
+    notes: 'Snow drift blockage along Sector 4 pass. Satellite uplink normal.',
+    status: 'Pending',
+    timestamp: '2 hours ago',
+  },
+  // Assam
+  {
+    id: 'SITE-AS-01',
+    name: 'Silchar Barak River Embankment Sector 9',
+    state: 'Assam',
+    district: 'Cachar (Silchar)',
+    lat: 24.8333,
+    lng: 92.7789,
+    damage: 'DESTROYED',
+    priorityScore: 94,
+    roadAccess: false,
+    estimatedOccupancy: 38,
+    notes: 'Dyke breach. 2m flood inundation across 4 blocks. NDRF boat teams engaged.',
+    status: 'Pending',
+    timestamp: '45 mins ago',
+  },
+  // Bihar
+  {
+    id: 'SITE-BR-01',
+    name: 'Patna Ganga Riverside Ghat Relief Complex',
+    state: 'Bihar',
+    district: 'Patna',
+    lat: 25.5941,
+    lng: 85.1376,
+    damage: 'MAJOR',
+    priorityScore: 89,
+    roadAccess: true,
+    estimatedOccupancy: 50,
+    notes: 'Ganga river water level 1.2m above danger mark. Community kitchen active.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Chhattisgarh
+  {
+    id: 'SITE-CG-01',
+    name: 'Bastar Forest Division Emergency Command',
+    state: 'Chhattisgarh',
+    district: 'Bastar',
+    lat: 19.1071,
+    lng: 81.9535,
+    damage: 'MINOR',
+    priorityScore: 55,
+    roadAccess: true,
+    estimatedOccupancy: 18,
+    notes: 'Flash flooding in seasonal rivulets. Forest tribal camp alerted.',
+    status: 'Rescued',
+    timestamp: '3 hours ago',
+  },
+  // Goa
+  {
+    id: 'SITE-GA-01',
+    name: 'Panaji Mandovi Estuary Sluice Gate Station',
+    state: 'Goa',
+    district: 'North Goa (Panaji)',
+    lat: 15.4909,
+    lng: 73.8278,
+    damage: 'NO_DAMAGE',
+    priorityScore: 25,
+    roadAccess: true,
+    estimatedOccupancy: 10,
+    notes: 'Tidal level monitoring active. Automated storm barrier functional.',
+    status: 'Pending',
+    timestamp: '4 hours ago',
+  },
+  // Gujarat
+  {
+    id: 'SITE-GJ-01',
+    name: 'Bhuj Seismic Epicenter Monitoring Station',
+    state: 'Gujarat',
+    district: 'Kutch (Bhuj)',
+    lat: 23.2420,
+    lng: 69.6669,
+    damage: 'MAJOR',
+    priorityScore: 86,
+    roadAccess: true,
+    estimatedOccupancy: 22,
+    notes: 'Faultline tremor 4.8 magnitude recorded. Structural audit underway.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Haryana
+  {
+    id: 'SITE-HR-01',
+    name: 'Ambala Tangri River Basin Relief Center',
+    state: 'Haryana',
+    district: 'Ambala',
+    lat: 30.3782,
+    lng: 76.7767,
+    damage: 'MINOR',
+    priorityScore: 62,
+    roadAccess: true,
+    estimatedOccupancy: 30,
+    notes: 'Rain runoff swelling river banks. Dewatering pumps active.',
+    status: 'Rescued',
+    timestamp: '2 hours ago',
+  },
+  // Himachal Pradesh
+  {
+    id: 'SITE-HP-01',
+    name: 'Mandi Beas River Flash Flood Camp',
+    state: 'Himachal Pradesh',
+    district: 'Mandi',
+    lat: 31.7087,
+    lng: 76.9320,
+    damage: 'DESTROYED',
+    priorityScore: 95,
+    roadAccess: false,
+    estimatedOccupancy: 20,
+    notes: 'Cloudburst tributary washed out bridge. Aerial drone scouting ongoing.',
+    status: 'Pending',
+    timestamp: '15 mins ago',
+  },
+  // Jharkhand
+  {
+    id: 'SITE-JH-01',
+    name: 'Ranchi Subarnarekha River Observation Hub',
+    state: 'Jharkhand',
+    district: 'Ranchi',
+    lat: 23.3441,
+    lng: 85.3096,
+    damage: 'MINOR',
+    priorityScore: 58,
+    roadAccess: true,
+    estimatedOccupancy: 14,
+    notes: 'Low-lying urban pocket drainage cleared. Water levels steady.',
+    status: 'Rescued',
+    timestamp: '4 hours ago',
+  },
+  // Karnataka
+  {
+    id: 'SITE-KA-01',
+    name: 'Kodagu Coorg Bhagamandala Landslide Watch',
+    state: 'Karnataka',
+    district: 'Kodagu (Coorg)',
+    lat: 12.4244,
+    lng: 75.7382,
+    damage: 'MAJOR',
+    priorityScore: 83,
+    roadAccess: false,
+    estimatedOccupancy: 26,
+    notes: 'Hill slope crack expansion. 14 families relocated to taluk shelter.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Madhya Pradesh
+  {
+    id: 'SITE-MP-01',
+    name: 'Jabalpur Narmada Bargi Dam Discharge Watch',
+    state: 'Madhya Pradesh',
+    district: 'Jabalpur',
+    lat: 23.1815,
+    lng: 79.9864,
+    damage: 'MINOR',
+    priorityScore: 60,
+    roadAccess: true,
+    estimatedOccupancy: 45,
+    notes: '11 sluice gates opened. Downstream alert issued across 22 villages.',
+    status: 'Dispatched',
+    timestamp: '2 hours ago',
+  },
+  // Manipur
+  {
+    id: 'SITE-MN-01',
+    name: 'Imphal Valley Nambul River Inundation Unit',
+    state: 'Manipur',
+    district: 'Imphal',
+    lat: 24.8170,
+    lng: 93.9368,
+    damage: 'MAJOR',
+    priorityScore: 81,
+    roadAccess: true,
+    estimatedOccupancy: 32,
+    notes: 'Heavy rainfall inundation along Khwairamband market sector.',
+    status: 'Pending',
+    timestamp: '1 hour ago',
+  },
+  // Meghalaya
+  {
+    id: 'SITE-ML-01',
+    name: 'Cherrapunji Sohra Waterfall Basin Station',
+    state: 'Meghalaya',
+    district: 'East Khasi Hills (Shillong)',
+    lat: 25.2700,
+    lng: 91.7323,
+    damage: 'MINOR',
+    priorityScore: 66,
+    roadAccess: true,
+    estimatedOccupancy: 18,
+    notes: 'Rainfall exceeding 450mm in 24h. Gorges roaring; roads passable.',
+    status: 'Rescued',
+    timestamp: '3 hours ago',
+  },
+  // Mizoram
+  {
+    id: 'SITE-MZ-01',
+    name: 'Aizawl Durtlang Slope Subsidence Post',
+    state: 'Mizoram',
+    district: 'Aizawl',
+    lat: 23.7271,
+    lng: 92.7176,
+    damage: 'MAJOR',
+    priorityScore: 79,
+    roadAccess: false,
+    estimatedOccupancy: 24,
+    notes: 'Hillside slip threatens 6 residential multi-storeys. Evacuation complete.',
+    status: 'Dispatched',
+    timestamp: '2 hours ago',
+  },
+  // Nagaland
+  {
+    id: 'SITE-NL-01',
+    name: 'Kohima Bypass Landslip Mitigation Hub',
+    state: 'Nagaland',
+    district: 'Kohima',
+    lat: 25.6751,
+    lng: 94.1086,
+    damage: 'MINOR',
+    priorityScore: 64,
+    roadAccess: true,
+    estimatedOccupancy: 15,
+    notes: 'Earth slip on NH-29 cleared by BRO bulldozers. Single-lane traffic.',
+    status: 'Rescued',
+    timestamp: '4 hours ago',
+  },
+  // Odisha
+  {
+    id: 'SITE-OD-01',
+    name: 'Puri Coastal Cyclone Multi-Purpose Shelter 12',
+    state: 'Odisha',
+    district: 'Puri',
+    lat: 19.8135,
+    lng: 85.8312,
+    damage: 'MAJOR',
+    priorityScore: 87,
+    roadAccess: true,
+    estimatedOccupancy: 80,
+    notes: 'Pre-landfall wind gusts 110km/h. High-capacity diesel generator on.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Punjab
+  {
+    id: 'SITE-PB-01',
+    name: 'Amritsar Ravi River Enclave Relief Station',
+    state: 'Punjab',
+    district: 'Amritsar',
+    lat: 31.6340,
+    lng: 74.8723,
+    damage: 'MINOR',
+    priorityScore: 63,
+    roadAccess: true,
+    estimatedOccupancy: 28,
+    notes: 'River overflow submerged farm tracts. Sandbagging completed.',
+    status: 'Rescued',
+    timestamp: '3 hours ago',
+  },
+  // Rajasthan
+  {
+    id: 'SITE-RJ-01',
+    name: 'Barmer Thar Desert Flash Emergency Center',
+    state: 'Rajasthan',
+    district: 'Barmer',
+    lat: 25.7532,
+    lng: 71.4181,
+    damage: 'MINOR',
+    priorityScore: 59,
+    roadAccess: true,
+    estimatedOccupancy: 20,
+    notes: 'Sudden cloudburst flash flooding in dry desert nullah. Roads clear.',
+    status: 'Rescued',
+    timestamp: '2 hours ago',
+  },
+  // Sikkim
+  {
+    id: 'SITE-SK-01',
+    name: 'Mangan Teesta Basin GLOF Early Warning Tower',
+    state: 'Sikkim',
+    district: 'Mangan (North Sikkim)',
+    lat: 27.5042,
+    lng: 88.5276,
+    damage: 'DESTROYED',
+    priorityScore: 97,
+    roadAccess: false,
+    estimatedOccupancy: 16,
+    notes: 'Glacial lake breach flash flood washed out Teesta Stage 3 dam section.',
+    status: 'Pending',
+    timestamp: '20 mins ago',
+  },
+  // Tamil Nadu
+  {
+    id: 'SITE-TN-01',
+    name: 'Chennai Adyar River Estuary Evacuation Complex',
+    state: 'Tamil Nadu',
+    district: 'Chennai',
+    lat: 13.0067,
+    lng: 80.2570,
+    damage: 'MAJOR',
+    priorityScore: 84,
+    roadAccess: true,
+    estimatedOccupancy: 70,
+    notes: 'Monsoon depression high rainfall. Inundation alerts across south zone.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Telangana
+  {
+    id: 'SITE-TG-01',
+    name: 'Bhadrachalam Godavari River Flood Staging Camp',
+    state: 'Telangana',
+    district: 'Bhadrachalam',
+    lat: 17.6688,
+    lng: 80.8935,
+    damage: 'MAJOR',
+    priorityScore: 83,
+    roadAccess: true,
+    estimatedOccupancy: 55,
+    notes: 'Godavari flood level reached 53ft (third warning level). Boat rescue active.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Tripura
+  {
+    id: 'SITE-TR-01',
+    name: 'Agartala Howrah River Sluice Gate Station',
+    state: 'Tripura',
+    district: 'Agartala',
+    lat: 23.8315,
+    lng: 91.2868,
+    damage: 'MINOR',
+    priorityScore: 61,
+    roadAccess: true,
+    estimatedOccupancy: 22,
+    notes: 'Urban storm drainage pump operating at maximum capacity.',
+    status: 'Rescued',
+    timestamp: '3 hours ago',
+  },
+  // Uttar Pradesh
+  {
+    id: 'SITE-UP-01',
+    name: 'Varanasi Assi Ghat Flood Water Monitoring Post',
+    state: 'Uttar Pradesh',
+    district: 'Varanasi',
+    lat: 25.3176,
+    lng: 82.9739,
+    damage: 'MAJOR',
+    priorityScore: 82,
+    roadAccess: true,
+    estimatedOccupancy: 40,
+    notes: 'Ganga submerged lower ghat steps. Boat movement suspended.',
+    status: 'Dispatched',
+    timestamp: '2 hours ago',
+  },
+  // West Bengal
+  {
+    id: 'SITE-WB-01',
+    name: 'Sundarbans Gosaba Island Cyclone Embankment',
+    state: 'West Bengal',
+    district: 'Sundarbans',
+    lat: 22.1696,
+    lng: 88.7562,
+    damage: 'DESTROYED',
+    priorityScore: 93,
+    roadAccess: false,
+    estimatedOccupancy: 60,
+    notes: 'Saline water breach across mud bund. 4 villages inundated. SAR teams deployed.',
+    status: 'Pending',
+    timestamp: '30 mins ago',
+  },
+  // Delhi NCR
+  {
+    id: 'SITE-DL-01',
+    name: 'Delhi Yamuna Old Railway Bridge Evacuation Camp',
+    state: 'Delhi NCR',
+    district: 'Yamuna Floodplain Zone',
+    lat: 28.6139,
+    lng: 77.2090,
+    damage: 'MAJOR',
+    priorityScore: 85,
+    roadAccess: true,
+    estimatedOccupancy: 90,
+    notes: 'Yamuna water level crossed 206.5m. Slum hutments relocated to higher road.',
+    status: 'Dispatched',
+    timestamp: '40 mins ago',
+  },
+  // Jammu & Kashmir
+  {
+    id: 'SITE-JK-01',
+    name: 'Srinagar Jhelum River Ram Munshi Bagh Station',
+    state: 'Jammu and Kashmir',
+    district: 'Srinagar',
+    lat: 34.0837,
+    lng: 74.7973,
+    damage: 'MAJOR',
+    priorityScore: 86,
+    roadAccess: true,
+    estimatedOccupancy: 48,
+    notes: 'Jhelum gauge at flood declaration stage. Sandbag reinforcement along bund.',
+    status: 'Dispatched',
+    timestamp: '1 hour ago',
+  },
+  // Ladakh
+  {
+    id: 'SITE-LA-01',
+    name: 'Leh Choglamsar Flash Flood Early Warning Tower',
+    state: 'Ladakh',
+    district: 'Leh',
+    lat: 34.1526,
+    lng: 77.5771,
+    damage: 'MINOR',
+    priorityScore: 67,
+    roadAccess: true,
+    estimatedOccupancy: 15,
+    notes: 'Mountain storm sensors functional. High-altitude SAR base standby.',
+    status: 'Rescued',
+    timestamp: '2 hours ago',
+  },
+  // Andaman & Nicobar
+  {
+    id: 'SITE-AN-01',
+    name: 'Port Blair Marine Jetty Tsunami Warning Post',
+    state: 'Andaman and Nicobar',
+    district: 'Port Blair',
+    lat: 11.6234,
+    lng: 92.7265,
+    damage: 'NO_DAMAGE',
+    priorityScore: 30,
+    roadAccess: true,
+    estimatedOccupancy: 25,
+    notes: 'Bay of Bengal deep-sea buoy telemetry normal. Coastal siren active test OK.',
+    status: 'Rescued',
+    timestamp: '5 hours ago',
+  },
+  // Chandigarh
+  {
+    id: 'SITE-CH-01',
+    name: 'Chandigarh Sukhna Lake Flood Spillway Terminal',
+    state: 'Chandigarh',
+    district: 'Chandigarh',
+    lat: 30.7333,
+    lng: 76.7794,
+    damage: 'NO_DAMAGE',
+    priorityScore: 18,
+    roadAccess: true,
+    estimatedOccupancy: 10,
+    notes: 'Flood gates operational. Regulated discharge to Sukhna Choe.',
+    status: 'Rescued',
+    timestamp: '4 hours ago',
+  },
+  // Dadra & Nagar Haveli and Daman & Diu
+  {
+    id: 'SITE-DN-01',
+    name: 'Daman Moti Daman Sea Wall Checkpost',
+    state: 'Dadra and Nagar Haveli and Daman and Diu',
+    district: 'Daman',
+    lat: 20.4283,
+    lng: 72.8397,
+    damage: 'NO_DAMAGE',
+    priorityScore: 22,
+    roadAccess: true,
+    estimatedOccupancy: 14,
+    notes: 'High tide breakwater barriers secured.',
+    status: 'Rescued',
+    timestamp: '3 hours ago',
+  },
+  // Lakshadweep
+  {
+    id: 'SITE-LD-01',
+    name: 'Kavaratti Island Disaster Shelter Station',
+    state: 'Lakshadweep',
+    district: 'Kavaratti',
+    lat: 10.5667,
+    lng: 72.6417,
+    damage: 'MINOR',
+    priorityScore: 52,
+    roadAccess: true,
+    estimatedOccupancy: 30,
+    notes: 'Atoll seawall wave surge. Desalination plant backup power online.',
+    status: 'Rescued',
+    timestamp: '3 hours ago',
+  },
+  // Puducherry
+  {
+    id: 'SITE-PY-01',
+    name: 'Puducherry Promenade Coastal Surge Base',
+    state: 'Puducherry',
+    district: 'Puducherry',
+    lat: 11.9416,
+    lng: 79.8083,
+    damage: 'MINOR',
+    priorityScore: 56,
+    roadAccess: true,
+    estimatedOccupancy: 20,
+    notes: 'Ocean surge monitoring. Emergency beach barricades installed.',
+    status: 'Rescued',
+    timestamp: '2 hours ago',
+  },
 ];
 
 const CARTO_KEY = import.meta.env.VITE_CARTO_API_KEY || 'cb1_4264_1_3438c67ecbcbe54961ebf696';
@@ -224,21 +844,36 @@ const TILE_LAYERS = {
       ? `https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`
       : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     attribution: '&copy; <a href="https://carto.com/">CARTO</a> OpenStreetMap',
+    maxNativeZoom: 19,
+    subdomains: 'abcd',
   },
   satellite: {
     name: 'Satellite View',
+    url: 'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    attribution: '&copy; Google Maps Satellite Imagery',
+    maxNativeZoom: 20,
+    subdomains: '0123',
+  },
+  esri: {
+    name: 'Esri Satellite',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: '&copy; Esri &mdash; Earthstar Geographics',
+    maxNativeZoom: 18,
+    subdomains: 'abc',
   },
   osm: {
     name: 'Street Map',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenStreetMap contributors',
+    maxNativeZoom: 19,
+    subdomains: 'abc',
   },
   topo: {
     name: 'Topographic Terrain',
     url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
     attribution: '&copy; OpenTopoMap contributors',
+    maxNativeZoom: 17,
+    subdomains: 'abc',
   },
 };
 
@@ -266,6 +901,11 @@ function MapController({
   onZoomChange?: (z: number) => void;
 }) {
   const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+    const t = setTimeout(() => map.invalidateSize(), 150);
+    return () => clearTimeout(t);
+  }, [map]);
   useEffect(() => {
     map.flyTo(center, zoom, { duration: 1.2, easeLinearity: 0.25 });
   }, [center, zoom, map]);
@@ -336,8 +976,8 @@ const GeoMap = () => {
     notes: '',
   });
 
-  // Unique list of states for filter
-  const stateOptions = Array.from(new Set(sites.map((s) => s.state)));
+  // Unique list of states for filter (All 28 States + 8 UTs + active sites)
+  const stateOptions = Array.from(new Set([...sites.map((s) => s.state), ...PRESET_REGIONS.map((r) => r.state)])).sort();
 
   // Perform Live Geocoding via Nominatim API with debounce
   useEffect(() => {
@@ -548,11 +1188,26 @@ const GeoMap = () => {
 
               {/* Preset Districts & States */}
               <div className="p-2 border-t border-white/[0.06]">
-                <div className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-[#FF8A3D] flex items-center gap-1.5">
-                  <Radio className="w-3 h-3" /> High-Risk Disaster Districts & Hotspots
+                <div className="px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider text-[#FF8A3D] flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <Radio className="w-3 h-3" /> All Indian States & Disaster Hotspots
+                  </span>
+                  <span className="text-[10px] text-[#9CA3AF]">
+                    {PRESET_REGIONS.filter(
+                      (p) =>
+                        !searchQuery ||
+                        p.state.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        p.district.toLowerCase().includes(searchQuery.toLowerCase())
+                    ).length} Available
+                  </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                  {PRESET_REGIONS.map((preset, i) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-[220px] overflow-y-auto">
+                  {PRESET_REGIONS.filter(
+                    (preset) =>
+                      !searchQuery ||
+                      preset.state.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      preset.district.toLowerCase().includes(searchQuery.toLowerCase())
+                  ).map((preset, i) => (
                     <button
                       key={i}
                       onClick={() => handleSelectPreset(preset)}
@@ -646,7 +1301,7 @@ const GeoMap = () => {
       </div>
 
       {/* ── Main Workspace: Map Canvas + Floating Sidebars ── */}
-      <div className="relative flex-1 w-full h-full">
+      <div className="relative flex-1 w-full h-full min-h-0">
         {/* Leaflet Map Container with Zoom up to 20 for rooftop resolution */}
         <MapContainer
           center={mapCenter}
@@ -658,10 +1313,12 @@ const GeoMap = () => {
           style={{ height: '100%', width: '100%' }}
         >
           <TileLayer
+            key={tileStyle}
             url={TILE_LAYERS[tileStyle].url}
             attribution={TILE_LAYERS[tileStyle].attribution}
             maxZoom={20}
-            maxNativeZoom={19}
+            maxNativeZoom={TILE_LAYERS[tileStyle].maxNativeZoom}
+            subdomains={TILE_LAYERS[tileStyle].subdomains as any}
           />
           <MapController center={mapCenter} zoom={mapZoom} onZoomChange={setMapZoom} />
           <MapClickHandler onMapClick={handleMapClick} isAddMode={isAddMode} />
@@ -869,10 +1526,20 @@ const GeoMap = () => {
             <div className="flex gap-1.5">
               <select
                 value={selectedStateFilter}
-                onChange={(e) => setSelectedStateFilter(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedStateFilter(val);
+                  if (val !== 'ALL') {
+                    const reg = PRESET_REGIONS.find((r) => r.state === val);
+                    if (reg) {
+                      setMapCenter([reg.lat, reg.lng]);
+                      setMapZoom(reg.zoom || 11);
+                    }
+                  }
+                }}
                 className="flex-1 px-2.5 py-1.5 rounded-lg text-[11px] text-[#D1D5DB] bg-black/40 border border-white/[0.08] focus:outline-none"
               >
-                <option value="ALL">All States</option>
+                <option value="ALL">All States ({stateOptions.length})</option>
                 {stateOptions.map((st) => (
                   <option key={st} value={st}>{st}</option>
                 ))}
