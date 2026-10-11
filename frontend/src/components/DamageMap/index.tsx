@@ -473,8 +473,8 @@ const DamageMap: React.FC<DamageMapProps> = ({
         getStateDistricts(region.state_id, selectedCountry?.country_code).catch(() => ({ districts: [] })),
         getDisasters(region.state_id, undefined, selectedCountry?.country_code).catch(() => ({ events: [] })),
       ]);
-      setDistricts(distRes.districts || []);
-      setEvents(evtRes.events || []);
+      setDistricts(Array.isArray(distRes) ? distRes : (distRes?.districts || []));
+      setEvents(evtRes?.events || []);
     } catch {
       setDistricts([]);
       setEvents([]);

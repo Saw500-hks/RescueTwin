@@ -112,14 +112,15 @@ const AgentCommandCenter: React.FC = () => {
       }
     };
     init();
-  }, [handleExecuteMission]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Update evidence when scenario changes
   const handleScenarioChange = async (scenId: string) => {
     setSelectedScenarioId(scenId);
     try {
       const evd = await getAgentEvidence(scenId);
-      setEvidence(evd);
+      if (evd && evd.length > 0) setEvidence(evd);
     } catch (err) {
       console.error(err);
     }
