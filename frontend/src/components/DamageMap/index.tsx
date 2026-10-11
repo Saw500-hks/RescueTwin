@@ -25,6 +25,7 @@ import {
   ChevronRight, AlertTriangle, Info, Layers, Filter,
   Building2, MapPin, Droplets, Wind, Mountain, Activity, Flame,
   X, ExternalLink, Loader2, ShieldAlert, CheckCircle2, Eye, Globe,
+  ChevronDown, Check,
 } from 'lucide-react';
 import clsx from 'clsx';
 import {
@@ -228,6 +229,9 @@ const DamageMap: React.FC<DamageMapProps> = ({
   defaultCountryCode = 'IN',
   defaultEventId,
 }) => {
+  // Mobile panel drawer state
+  const [mobilePanelOpen, setMobilePanelOpen] = useState(false);
+
   // Country state
   const [countries, setCountries] = useState<Country[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
@@ -551,8 +555,8 @@ const DamageMap: React.FC<DamageMapProps> = ({
 
   return (
     <div className="flex h-full w-full relative overflow-hidden">
-      {/* ── Consolidated Left Geographic Control Panel ─────────────────────── */}
-      <aside className="w-[270px] xl:w-[290px] flex-shrink-0 flex flex-col overflow-hidden"
+      {/* ── Consolidated Left Geographic Control Panel (Desktop) ────────────── */}
+      <aside className="hidden md:flex md:w-[270px] xl:w-[290px] flex-shrink-0 flex-col overflow-hidden"
         style={{ background: 'rgba(5,10,20,0.95)', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
 
         {/* Header */}
@@ -786,8 +790,133 @@ const DamageMap: React.FC<DamageMapProps> = ({
         </div>
       </aside>
 
+      {/* ── Mobile Geographic Modal / Bottom Drawer ─────────────────────────── */}
+      {mobilePanelOpen && (
+        <div className="md:hidden fixed inset-0 z-[2000] bg-black/80 backdrop-blur-md flex flex-col justify-end animate-fade-in">
+          <div className="bg-[#050A14] border-t border-cyan-500/40 rounded-t-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+            <div className="p-3 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-cyan-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-white">Disaster Intelligence & Region Selection</span>
+              </div>
+              <button
+                onClick={() => setMobilePanelOpen(false)}
+                className="p-1.5 rounded-lg bg-white/10 text-white hover:bg-white/20 active:scale-95"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              <div className="p-3 bg-black/40 rounded-xl border border-white/[0.08] space-y-2.5">
+                <div className="text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                  GEOGRAPHIC SELECTION
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-cyan-950/25 border border-cyan-500/30">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base leading-none">🇮🇳</span>
+                    <div>
+                      <span className="text-xs font-bold text-white block leading-tight">India</span>
+                      <span className="text-[9px] text-cyan-400 font-mono">National Command (NDRF)</span>
+                    </div>
+                  </div>
+                  <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                    ACTIVE
+                  </span>
+                </div>
+                {selectedCountry && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <span>{regionLabel}</span>
+                      {regions.length > 0 && <span className="text-slate-500 font-normal">({regions.length})</span>}
+                    </div>
+                    <select
+                      value={selectedRegion?.state_id || ''}
+                      onChange={(e) => {
+                        const reg = regions.find(r => r.state_id === e.target.value);
+                        if (reg) handleSelectRegion(reg);
+                      }}
+                      className="w-full bg-[#050A14] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                    >
+                      <option value="" disabled>Select {regionLabel}...</option>
+                      {regions.map((r) => (
+                        <option key={r.state_id} value={r.state_id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {selectedRegion && districts.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <span>{districtLabel}</span>
+                      <span className="text-slate-500 font-normal">({districts.length})</span>
+                    </div>
+                    <select
+                      value={selectedDistrict?.district_id || ''}
+                      onChange={(e) => {
+                        const dist = districts.find(d => d.district_id === e.target.value);
+                        if (dist) handleSelectDistrict(dist);
+                      }}
+                      className="w-full bg-[#050A14] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200"
+                    >
+                      <option value="" disabled>Select {districtLabel}...</option>
+                      {districts.map((d) => (
+                        <option key={d.district_id} value={d.district_id}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {events.length > 0 && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-bold uppercase tracking-wider text-slate-400">
+                      <span>Disaster Event</span>
+                      <span className="text-slate-500 font-normal">({events.length})</span>
+                    </div>
+                    <select
+                      value={selectedEvent?.event_id || ''}
+                      onChange={(e) => {
+                        const evt = events.find(ev => ev.event_id === e.target.value);
+                        if (evt) handleSelectEvent(evt);
+                      }}
+                      className="w-full bg-[#050A14] border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-medium"
+                    >
+                      <option value="" disabled>Select Disaster Event...</option>
+                      {events.map((ev) => (
+                        <option key={ev.event_id} value={ev.event_id}>
+                          {ev.title || ev.disaster_type} ({ev.severity})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="p-3 border-t border-white/10 bg-black/60 flex-shrink-0">
+              <button
+                onClick={() => setMobilePanelOpen(false)}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-bold text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-98"
+              >
+                <Check className="w-4 h-4" /> Apply & Explore Map
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Map ────────────────────────────────────────────────────────────── */}
       <div className="flex-1 relative h-full">
+        {/* Mobile Floating Drawer Trigger */}
+        <div className="md:hidden absolute top-2.5 left-2.5 z-[990]">
+          <button
+            onClick={() => setMobilePanelOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#050A14]/90 border border-cyan-500/40 text-cyan-300 font-bold text-[11px] shadow-2xl backdrop-blur-md active:scale-95 transition-all"
+          >
+            <Globe className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="truncate max-w-[140px]">
+              {selectedDistrict ? selectedDistrict.name : selectedRegion ? selectedRegion.name : 'India · Patna'}
+            </span>
+            <ChevronDown className="w-3 h-3 text-cyan-400" />
+          </button>
+        </div>
         <MapContainer
           center={mapCenter}
           zoom={mapZoom}
@@ -1110,7 +1239,7 @@ const DamageMap: React.FC<DamageMapProps> = ({
 
         {/* Flood Layer Status Alert (bottom-right of map) */}
         {selectedEvent && (
-          <div className="absolute bottom-3 right-3 z-[999] max-w-[340px] p-2.5 rounded-xl backdrop-blur text-[11px] border shadow-2xl"
+          <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 z-[999] max-w-[calc(100vw-20px)] sm:max-w-[320px] p-2 sm:p-2.5 rounded-xl backdrop-blur text-[10px] sm:text-[11px] border shadow-2xl"
             style={{
               background: 'rgba(5, 10, 20, 0.92)',
               borderColor: floodExtentInfo?.data_status === 'DATA UNAVAILABLE' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(56, 189, 248, 0.3)',
@@ -1134,7 +1263,7 @@ const DamageMap: React.FC<DamageMapProps> = ({
         )}
 
         {/* Breadcrumb */}
-        <div className="absolute top-3 left-3 z-[999] flex items-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur text-[11px]"
+        <div className="hidden sm:flex absolute top-3 left-3 z-[999] items-center gap-1.5 px-3 py-1.5 rounded-lg backdrop-blur text-[11px]"
           style={{ background: 'rgba(5,10,20,0.85)', border: '1px solid rgba(255,255,255,0.1)' }}>
           <span className="text-slate-500">RescueTwin</span>
           {selectedCountry && <><ChevronRight className="w-3 h-3 text-slate-600" /><span className="text-cyan-400 font-bold">{selectedCountry.name}</span></>}
@@ -1161,8 +1290,9 @@ const DamageMap: React.FC<DamageMapProps> = ({
       {/* ── Right Building Detail / AI Panel ───────────────────────────────── */}
       {/* 1. DEMO BUILDING DETAIL PANEL */}
       {selectedBuilding && (
-        <aside className="w-[300px] flex-shrink-0 flex flex-col overflow-hidden border-l border-white/[0.07]"
-          style={{ background: 'rgba(5,10,20,0.97)' }}>
+        <aside className="fixed inset-x-0 bottom-0 max-h-[75vh] z-[1500] rounded-t-2xl border-t border-cyan-500/30 shadow-2xl backdrop-blur-xl md:relative md:inset-auto md:w-[300px] md:max-h-none md:rounded-none md:z-auto md:border-t-0 md:border-l md:border-white/[0.07] flex-shrink-0 flex flex-col overflow-hidden"
+          style={{ background: 'rgba(5,10,20,0.98)' }}>
+          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto my-1.5 md:hidden" />
           <div className="p-3 border-b border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-amber-400" />
@@ -1266,8 +1396,9 @@ const DamageMap: React.FC<DamageMapProps> = ({
 
       {/* 2. AUTHENTIC OSM BUILDING FOOTPRINT PANEL */}
       {selectedOsmFeature && (
-        <aside className="w-[310px] flex-shrink-0 flex flex-col overflow-hidden border-l border-white/[0.07]"
-          style={{ background: 'rgba(5,10,20,0.97)' }}>
+        <aside className="fixed inset-x-0 bottom-0 max-h-[75vh] z-[1500] rounded-t-2xl border-t border-cyan-500/30 shadow-2xl backdrop-blur-xl md:relative md:inset-auto md:w-[310px] md:max-h-none md:rounded-none md:z-auto md:border-t-0 md:border-l md:border-white/[0.07] flex-shrink-0 flex flex-col overflow-hidden"
+          style={{ background: 'rgba(5,10,20,0.98)' }}>
+          <div className="w-10 h-1 bg-white/20 rounded-full mx-auto my-1.5 md:hidden" />
           <div className="p-3 border-b border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-sky-400" />

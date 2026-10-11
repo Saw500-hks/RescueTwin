@@ -52,87 +52,90 @@ const CommandCenter: React.FC<CommandCenterProps> = ({
   const headerNote = 'All India scenario data is for operational demonstration. Authenticated with OpenStreetMap GIS.';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-68px)] sm:h-[calc(100dvh-68px)] overflow-hidden">
       {/* ── Top Bar ────────────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-3 px-4 py-2.5 flex-shrink-0 border-b border-white/[0.06]"
+        className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2 flex-shrink-0 border-b border-white/[0.06]"
         style={{ background: 'rgba(5,10,20,0.97)' }}
       >
         {/* Title */}
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-7 h-7 rounded-lg bg-red-500/15 border border-red-500/30 flex items-center justify-center flex-shrink-0">
             <ShieldAlert className="w-4 h-4 text-red-400" />
           </div>
-          <div>
-            <div className="text-sm font-bold text-white leading-tight">{pageTitle}</div>
-            <div className="text-[9px] text-slate-500 leading-tight">{pageSubtitle}</div>
+          <div className="min-w-0">
+            <div className="text-xs sm:text-sm font-bold text-white truncate leading-tight">{pageTitle}</div>
+            <div className="text-[8.5px] sm:text-[9px] text-slate-500 truncate leading-tight">{pageSubtitle}</div>
           </div>
         </div>
 
-        {/* Live indicator */}
-        <div className="flex items-center gap-1.5 ml-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="text-[10px] text-cyan-400 font-medium">System Active</span>
-        </div>
+        {/* Right side status & quick actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Live indicator */}
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-cyan-950/40 border border-cyan-500/30 text-[9px] text-cyan-400 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="hidden xs:inline">System Active</span>
+          </div>
 
-        {/* Data status pill */}
-        <span className={clsx('text-[8.5px] font-bold px-1.5 py-0.5 rounded border', headerDataStatus.cls)}>
-          {headerDataStatus.label}
-        </span>
+          {/* Data status pill */}
+          <span className={clsx('text-[8px] sm:text-[8.5px] font-bold px-1.5 py-0.5 rounded border hidden sm:inline-block', headerDataStatus.cls)}>
+            {headerDataStatus.label}
+          </span>
 
-        <span className="text-[9px] text-slate-600 ml-1 hidden md:block">
-          {headerNote}
-        </span>
-
-        {/* Right actions */}
-        <div className="ml-auto flex items-center gap-2">
+          {/* Quick links */}
           <button
             onClick={() => navigate('/agent')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-500/10 border border-green-500/25 text-green-400 hover:bg-green-500/15 transition-all text-[11px] font-medium"
+            title="AI Autonomous Agent"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-500/10 border border-green-500/25 text-green-400 hover:bg-green-500/15 transition-all text-[10px] sm:text-[11px] font-medium"
           >
             <Cpu className="w-3 h-3" />
-            <span>AI Commander</span>
-            <ExternalLink className="w-2.5 h-2.5" />
+            <span className="hidden md:inline">AI Commander</span>
+            <ExternalLink className="w-2.5 h-2.5 hidden sm:inline" />
           </button>
           <button
             onClick={() => navigate('/viewer')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 hover:bg-cyan-500/15 transition-all text-[11px] font-medium"
+            title="3D Digital Twin"
+            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-cyan-500/10 border border-cyan-500/25 text-cyan-400 hover:bg-cyan-500/15 transition-all text-[10px] sm:text-[11px] font-medium"
           >
             <Box className="w-3 h-3" />
-            <span>3D Twin</span>
-            <ExternalLink className="w-2.5 h-2.5" />
+            <span className="hidden md:inline">3D Twin</span>
+            <ExternalLink className="w-2.5 h-2.5 hidden sm:inline" />
           </button>
         </div>
       </div>
 
       {/* ── Panel Tabs ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1 px-4 py-1.5 border-b border-white/[0.05] flex-shrink-0"
+      <div className="flex items-center justify-between gap-1 px-2 sm:px-4 py-1.5 border-b border-white/[0.05] flex-shrink-0 overflow-x-auto no-scrollbar"
         style={{ background: 'rgba(5,10,20,0.95)' }}>
-        {([
-          { id: 'map', label: 'Command Map', icon: <MapPin className="w-3 h-3" /> },
-          { id: 'chat', label: 'AI Commander', icon: <Cpu className="w-3 h-3" /> },
-          { id: 'mission', label: 'Mission Planner', icon: <Target className="w-3 h-3" /> },
-        ] as { id: PanelMode; label: string; icon: React.ReactNode }[]).map(({ id, label, icon }) => (
-          <button
-            key={id}
-            onClick={() => setActivePanel(id)}
-            className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium border transition-all',
-              activePanel === id
-                ? 'bg-cyan-500/10 border-cyan-500/25 text-cyan-300'
-                : 'border-transparent text-slate-500 hover:text-slate-300 hover:bg-white/[0.03]'
-            )}
-          >
-            {icon}
-            {label}
-          </button>
-        ))}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {([
+            { id: 'map', shortLabel: 'Map', fullLabel: 'Command Map', icon: <MapPin className="w-3 h-3" /> },
+            { id: 'chat', shortLabel: 'Commander', fullLabel: 'AI Commander', icon: <Cpu className="w-3 h-3" /> },
+            { id: 'mission', shortLabel: 'Planner', fullLabel: 'Mission Planner', icon: <Target className="w-3 h-3" /> },
+          ] as { id: PanelMode; shortLabel: string; fullLabel: string; icon: React.ReactNode }[]).map(({ id, shortLabel, fullLabel, icon }) => (
+            <button
+              key={id}
+              onClick={() => setActivePanel(id)}
+              className={clsx(
+                'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all whitespace-nowrap',
+                activePanel === id
+                  ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300 shadow-[0_0_10px_rgba(0,210,255,0.15)]'
+                  : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]'
+              )}
+            >
+              {icon}
+              <span className="inline sm:hidden">{shortLabel}</span>
+              <span className="hidden sm:inline">{fullLabel}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Compact operational status */}
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            GIS & OSM Pipeline Active
+        <div className="flex items-center gap-2 flex-shrink-0 pl-2">
+          <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_6px_#00E5FF]" />
+            <span className="hidden sm:inline">GIS & OSM Pipeline Active</span>
+            <span className="inline sm:hidden text-cyan-300 font-semibold">Active</span>
           </span>
           <div className="text-[9px] text-slate-500 hidden xl:block border-l border-white/10 pl-2">
             AI decision support only

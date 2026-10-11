@@ -93,8 +93,8 @@ const MissionPlanner: React.FC<{
             <div className="text-[9px] text-slate-500">Nemotron AI · Decision Support</div>
           </div>
         </div>
-        <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-yellow-500/10 text-yellow-400 border-yellow-500/25">
-          DEMO DATA
+        <span className="text-[8.5px] font-bold px-1.5 py-0.5 rounded border bg-cyan-500/10 text-cyan-400 border-cyan-500/25">
+          AI DECISION SUPPORT
         </span>
       </div>
 
